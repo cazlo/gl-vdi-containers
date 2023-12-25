@@ -1,0 +1,958 @@
+diff --git a/xorg-server-1.20.14/Xext/saver.c b/Xserver/Xext/saver.c
+index c23907d..05b9ca3 100644
+--- a/xorg-server-1.20.14/Xext/saver.c
++++ b/Xserver/Xext/saver.c
+@@ -1051,7 +1051,7 @@ ScreenSaverSetAttributes(ClientPtr client)
+         pVlist++;
+     }
+     if (pPriv->attr)
+-        FreeScreenAttr(pPriv->attr);
++        FreeResource(pPriv->attr->resource, AttrType);
+     pPriv->attr = pAttr;
+     pAttr->resource = FakeClientID(client->index);
+     if (!AddResource(pAttr->resource, AttrType, (void *) pAttr))
+diff --git a/xorg-server-1.20.14/Xext/shm.c b/Xserver/Xext/shm.c
+index 24c6b10..be2be20 100644
+--- a/xorg-server-1.20.14/Xext/shm.c
++++ b/Xserver/Xext/shm.c
+@@ -1211,7 +1211,7 @@ shm_tmpfile(void)
+         "/var/tmp",
+         "/tmp",
+     };
+-    int	fd;
++    int	fd, i;
+ 
+ #ifdef HAVE_MEMFD_CREATE
+     fd = memfd_create("xorg", MFD_CLOEXEC|MFD_ALLOW_SEALING);
+@@ -1223,7 +1223,7 @@ shm_tmpfile(void)
+ #endif
+ 
+ #ifdef O_TMPFILE
+-    for (int i = 0; i < ARRAY_SIZE(shmdirs); i++) {
++    for (i = 0; i < ARRAY_SIZE(shmdirs); i++) {
+         fd = open(shmdirs[i], O_TMPFILE|O_RDWR|O_CLOEXEC|O_EXCL, 0666);
+         if (fd >= 0) {
+             DebugF ("Using O_TMPFILE\n");
+@@ -1233,7 +1233,7 @@ shm_tmpfile(void)
+     ErrorF ("Not using O_TMPFILE\n");
+ #endif
+ 
+-    for (int i = 0; i < ARRAY_SIZE(shmdirs); i++) {
++    for (i = 0; i < ARRAY_SIZE(shmdirs); i++) {
+         char template[PATH_MAX];
+         snprintf(template, ARRAY_SIZE(template), "%s/shmfd-XXXXXX", shmdirs[i]);
+ #ifdef HAVE_MKOSTEMP
+diff --git a/xorg-server-1.20.14/Xext/xtest.c b/Xserver/Xext/xtest.c
+index 38b8012..bf11789 100644
+--- a/xorg-server-1.20.14/Xext/xtest.c
++++ b/Xserver/Xext/xtest.c
+@@ -501,10 +501,11 @@ XTestSwapFakeInput(ClientPtr client, xReq * req)
+ 
+     nev = ((req->length << 2) - sizeof(xReq)) / sizeof(xEvent);
+     for (ev = (xEvent *) &req[1]; --nev >= 0; ev++) {
++        int evtype = ev->u.u.type & 0x177;
+         /* Swap event */
+-        proc = EventSwapVector[ev->u.u.type & 0177];
++        proc = EventSwapVector[evtype];
+         /* no swapping proc; invalid event type? */
+-        if (!proc || proc == NotImplemented) {
++        if (!proc || proc == NotImplemented || evtype == GenericEvent) {
+             client->errorValue = ev->u.u.type;
+             return BadValue;
+         }
+diff --git a/xorg-server-1.20.14/Xext/xvmain.c b/Xserver/Xext/xvmain.c
+index c520c7d..5f4c174 100644
+--- a/xorg-server-1.20.14/Xext/xvmain.c
++++ b/Xserver/Xext/xvmain.c
+@@ -811,8 +811,10 @@ XvdiSelectVideoNotify(ClientPtr client, DrawablePtr pDraw, BOOL onoff)
+         tpn = pn;
+         while (tpn) {
+             if (tpn->client == client) {
+-                if (!onoff)
++                if (!onoff) {
+                     tpn->client = NULL;
++                    FreeResource(tpn->id, XvRTVideoNotify);
++                }
+                 return Success;
+             }
+             if (!tpn->client)
+diff --git a/xorg-server-1.20.14/Xi/exevents.c b/Xserver/Xi/exevents.c
+index 659816a..0cb8d78 100644
+--- a/xorg-server-1.20.14/Xi/exevents.c
++++ b/Xserver/Xi/exevents.c
+@@ -575,8 +575,10 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
+             memcpy(to->button->xkb_acts, from->button->xkb_acts,
+                    sizeof(XkbAction));
+         }
+-        else
++        else {
+             free(to->button->xkb_acts);
++            to->button->xkb_acts = NULL;
++        }
+ 
+         memcpy(to->button->labels, from->button->labels,
+                from->button->numButtons * sizeof(Atom));
+diff --git a/xorg-server-1.20.14/Xi/xichangehierarchy.c b/Xserver/Xi/xichangehierarchy.c
+index 504defe..ad89a31 100644
+--- a/xorg-server-1.20.14/Xi/xichangehierarchy.c
++++ b/Xserver/Xi/xichangehierarchy.c
+@@ -140,7 +140,7 @@ add_master(ClientPtr client, xXIAddMasterInfo * c, int flags[MAXDEVICES])
+ {
+     DeviceIntPtr ptr, keybd, XTestptr, XTestkeybd;
+     char *name;
+-    int rc;
++    int i, rc;
+ 
+     name = calloc(c->name_len + 1, sizeof(char));
+     if (name == NULL) {
+@@ -194,7 +194,7 @@ add_master(ClientPtr client, xXIAddMasterInfo * c, int flags[MAXDEVICES])
+     flags[XTestptr->id] |= XISlaveAttached;
+     flags[XTestkeybd->id] |= XISlaveAttached;
+ 
+-    for (int i = 0; i < currentMaxClients; i++)
++    for (i = 0; i < currentMaxClients; i++)
+         XIBarrierNewMasterDevice(clients[i], ptr->id);
+ 
+  unwind:
+@@ -219,7 +219,7 @@ static int
+ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
+ {
+     DeviceIntPtr ptr, keybd, XTestptr, XTestkeybd;
+-    int rc = Success;
++    int i, rc = Success;
+ 
+     if (r->return_mode != XIAttachToMaster && r->return_mode != XIFloating)
+         return BadValue;
+@@ -301,7 +301,7 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
+         }
+     }
+ 
+-    for (int i = 0; i < currentMaxClients; i++)
++    for (i = 0; i < currentMaxClients; i++)
+         XIBarrierRemoveMasterDevice(clients[i], ptr->id);
+ 
+     /* disable the remove the devices, XTest devices must be done first
+diff --git a/xorg-server-1.20.14/Xi/xipassivegrab.c b/Xserver/Xi/xipassivegrab.c
+index d30f51f..89a5910 100644
+--- a/xorg-server-1.20.14/Xi/xipassivegrab.c
++++ b/Xserver/Xi/xipassivegrab.c
+@@ -133,6 +133,12 @@ ProcXIPassiveGrabDevice(ClientPtr client)
+         return BadValue;
+     }
+ 
++    /* XI2 allows 32-bit keycodes but thanks to XKB we can never
++     * implement this. Just return an error for all keycodes that
++     * cannot work anyway, same for buttons > 255. */
++    if (stuff->detail > 255)
++        return XIAlreadyGrabbed;
++
+     if (XICheckInvalidMaskBits(client, (unsigned char *) &stuff[1],
+                                stuff->mask_len * 4) != Success)
+         return BadValue;
+@@ -203,14 +209,8 @@ ProcXIPassiveGrabDevice(ClientPtr client)
+                                 &param, XI2, &mask);
+             break;
+         case XIGrabtypeKeycode:
+-            /* XI2 allows 32-bit keycodes but thanks to XKB we can never
+-             * implement this. Just return an error for all keycodes that
+-             * cannot work anyway */
+-            if (stuff->detail > 255)
+-                status = XIAlreadyGrabbed;
+-            else
+-                status = GrabKey(client, dev, mod_dev, stuff->detail,
+-                                 &param, XI2, &mask);
++            status = GrabKey(client, dev, mod_dev, stuff->detail,
++                             &param, XI2, &mask);
+             break;
+         case XIGrabtypeEnter:
+         case XIGrabtypeFocusIn:
+@@ -319,6 +319,12 @@ ProcXIPassiveUngrabDevice(ClientPtr client)
+         return BadValue;
+     }
+ 
++    /* We don't allow passive grabs for details > 255 anyway */
++    if (stuff->detail > 255) {
++        client->errorValue = stuff->detail;
++        return BadValue;
++    }
++
+     rc = dixLookupWindow(&win, stuff->grab_window, client, DixSetAttrAccess);
+     if (rc != Success)
+         return rc;
+diff --git a/xorg-server-1.20.14/Xi/xiproperty.c b/Xserver/Xi/xiproperty.c
+index 6ec419e..0cfa6e3 100644
+--- a/xorg-server-1.20.14/Xi/xiproperty.c
++++ b/Xserver/Xi/xiproperty.c
+@@ -890,7 +890,7 @@ ProcXChangeDeviceProperty(ClientPtr client)
+     REQUEST(xChangeDevicePropertyReq);
+     DeviceIntPtr dev;
+     unsigned long len;
+-    int totalSize;
++    uint64_t totalSize;
+     int rc;
+ 
+     REQUEST_AT_LEAST_SIZE(xChangeDevicePropertyReq);
+@@ -1128,7 +1128,7 @@ ProcXIChangeProperty(ClientPtr client)
+ {
+     int rc;
+     DeviceIntPtr dev;
+-    int totalSize;
++    uint64_t totalSize;
+     unsigned long len;
+ 
+     REQUEST(xXIChangePropertyReq);
+diff --git a/xorg-server-1.20.14/composite/compwindow.c b/Xserver/composite/compwindow.c
+index 54b4e6a..8db9d03 100644
+--- a/xorg-server-1.20.14/composite/compwindow.c
++++ b/Xserver/composite/compwindow.c
+@@ -613,6 +613,11 @@ compDestroyWindow(WindowPtr pWin)
+     ret = (*pScreen->DestroyWindow) (pWin);
+     cs->DestroyWindow = pScreen->DestroyWindow;
+     pScreen->DestroyWindow = compDestroyWindow;
++
++    /* Did we just destroy the overlay window? */
++    if (pWin == cs->pOverlayWin)
++        cs->pOverlayWin = NULL;
++
+ /*    compCheckTree (pWin->drawable.pScreen); can't check -- tree isn't good*/
+     return ret;
+ }
+diff --git a/xorg-server-1.20.14/dix/events.c b/Xserver/dix/events.c
+index 427b891..0f32bd8 100644
+--- a/xorg-server-1.20.14/dix/events.c
++++ b/Xserver/dix/events.c
+@@ -148,6 +148,12 @@ Equipment Corporation.
+ #include "eventconvert.h"
+ #include "mi.h"
+ 
++#ifdef TURBOVNC
++extern Window vncGetSelectionWindow(void);
++extern void vncHandleSelection(Atom selection, Atom target, Atom property,
++                               Atom requestor, TimeStamp time);
++#endif
++
+ /* Extension events type numbering starts at EXTENSION_EVENT_BASE.  */
+ #define NoSuchEvent 0x80000000  /* so doesn't match NoEventMask */
+ #define StructureAndSubMask ( StructureNotifyMask | SubstructureNotifyMask )
+@@ -5362,6 +5368,18 @@ ProcSendEvent(ClientPtr client)
+ 
+     stuff->event.u.u.type &= ~(SEND_EVENT_BIT);
+ 
++#ifdef TURBOVNC
++    if (stuff->event.u.u.type == SelectionNotify &&
++        stuff->event.u.selectionNotify.requestor == vncGetSelectionWindow()) {
++        TimeStamp time;
++        time = ClientTimeToServerTime(stuff->event.u.selectionNotify.time);
++        vncHandleSelection(stuff->event.u.selectionNotify.selection,
++                           stuff->event.u.selectionNotify.target,
++                           stuff->event.u.selectionNotify.property,
++                           stuff->event.u.selectionNotify.requestor, time);
++    }
++#endif
++
+     /* The client's event type must be a core event type or one defined by an
+        extension. */
+ 
+diff --git a/xorg-server-1.20.14/dix/property.c b/Xserver/dix/property.c
+index ff1d669..9381c4d 100644
+--- a/xorg-server-1.20.14/dix/property.c
++++ b/Xserver/dix/property.c
+@@ -205,7 +205,8 @@ ProcChangeProperty(ClientPtr client)
+     WindowPtr pWin;
+     char format, mode;
+     unsigned long len;
+-    int sizeInBytes, totalSize, err;
++    int sizeInBytes, err;
++    uint64_t totalSize;
+ 
+     REQUEST(xChangePropertyReq);
+ 
+@@ -362,6 +363,13 @@ dixChangeWindowProperty(ClientPtr pClient, WindowPtr pWin, Atom property,
+     if (sendevent)
+         deliverPropertyNotifyEvent(pWin, PropertyNewValue, pProp);
+ 
++#ifdef TURBOVNC
++    if (pWin->parent == NullWindow) {
++        extern void rfbRootPropertyChange();
++        rfbRootPropertyChange(pProp);
++    }
++#endif
++
+     return Success;
+ }
+ 
+diff --git a/xorg-server-1.20.14/dix/registry.c b/Xserver/dix/registry.c
+index 84d48b4..3e80392 100644
+--- a/xorg-server-1.20.14/dix/registry.c
++++ b/Xserver/dix/registry.c
+@@ -1,6 +1,7 @@
+ /************************************************************
+ 
+-Author: Eamon Walsh <ewalsh@tycho.nsa.gov>
++Authors: Eamon Walsh <ewalsh@tycho.nsa.gov>
++         D. R. Commander
+ 
+ Permission to use, copy, modify, distribute, and sell this software and its
+ documentation for any purpose is hereby granted without fee, provided that
+@@ -32,7 +33,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ #ifdef X_REGISTRY_REQUEST
+ #define CORE "X11"
++#if defined(TURBOVNC) && !defined(TURBOVNC_STATIC_XORG_PATHS)
++char registry_path[PATH_MAX] = SERVER_MISC_CONFIG_PATH "/protocol.txt";
++#define FILENAME registry_path
++#else
+ #define FILENAME SERVER_MISC_CONFIG_PATH "/protocol.txt"
++#endif
+ 
+ #define PROT_COMMENT '#'
+ #define PROT_REQUEST 'R'
+@@ -202,7 +208,11 @@ RegisterExtensionNames(ExtensionEntry * extEntry)
+         }
+ 
+  invalid:
++#ifdef TURBOVNC
++        LogMessage(X_WARNING, "Invalid line in %s, skipping\n", FILENAME);
++#else
+         LogMessage(X_WARNING, "Invalid line in " FILENAME ", skipping\n");
++#endif
+  skip:
+         free(lineobj);
+     }
+@@ -353,7 +363,11 @@ dixResetRegistry(void)
+     fh = fopen(FILENAME, "r");
+     if (!fh)
+         LogMessage(X_WARNING,
++#ifdef TURBOVNC
++                   "Failed to open protocol names file %s\n", FILENAME);
++#else
+                    "Failed to open protocol names file " FILENAME "\n");
++#endif
+ 
+     /* Add the core protocol */
+     RegisterExtensionNames(&extEntry);
+diff --git a/xorg-server-1.20.14/dix/selection.c b/Xserver/dix/selection.c
+index d46103f..67509d4 100644
+--- a/xorg-server-1.20.14/dix/selection.c
++++ b/Xserver/dix/selection.c
+@@ -54,6 +54,14 @@ SOFTWARE.
+ #include "selection.h"
+ #include "xace.h"
+ 
++#ifdef TURBOVNC
++extern int vncConvertSelection(ClientPtr client, Atom selection, Atom target,
++                               Atom property, Window requestor, CARD32 time,
++                               const char *data);
++extern Window vncGetSelectionWindow(void);
++extern char *cachedData;
++#endif
++
+ /*****************************************************************
+  * Selection Stuff
+  *
+@@ -287,6 +295,15 @@ ProcConvertSelection(ClientPtr client)
+     memset(&event, 0, sizeof(xEvent));
+     if (rc != Success && rc != BadMatch)
+         return rc;
++#ifdef TURBOVNC
++    else if (rc == Success && pSel->client == serverClient &&
++             pSel->window == vncGetSelectionWindow()) {
++        rc = vncConvertSelection(client, stuff->selection, stuff->target,
++                                 stuff->property, stuff->requestor,
++                                 stuff->time, cachedData);
++        if (rc == Success) return rc;
++    }
++#endif
+     else if (rc == Success && pSel->window != None) {
+         event.u.u.type = SelectionRequest;
+         event.u.selectionRequest.owner = pSel->window;
+diff --git a/xorg-server-1.20.14/fb/fbimage.c b/Xserver/fb/fbimage.c
+index bd24728..801df20 100644
+--- a/xorg-server-1.20.14/fb/fbimage.c
++++ b/Xserver/fb/fbimage.c
+@@ -210,7 +210,7 @@ fbGetImage(DrawablePtr pDrawable,
+ {
+     FbBits *src;
+     FbStride srcStride;
+-    int srcBpp;
++    int i, srcBpp;
+     int srcXoff, srcYoff;
+     FbStip *dst;
+     FbStride dstStride;
+@@ -240,7 +240,7 @@ fbGetImage(DrawablePtr pDrawable,
+                   dst, dstStride, 0, w * srcBpp, h, GXcopy, FB_ALLONES, srcBpp);
+ 
+         if (pm != FB_ALLONES) {
+-            for (int i = 0; i < dstStride * h; i++)
++            for (i = 0; i < dstStride * h; i++)
+                 dst[i] &= pm;
+         }
+     }
+diff --git a/xorg-server-1.20.14/glx/glxdricommon.c b/Xserver/glx/glxdricommon.c
+index 2e00bab..a16e1bc 100644
+--- a/xorg-server-1.20.14/glx/glxdricommon.c
++++ b/Xserver/glx/glxdricommon.c
+@@ -258,7 +258,11 @@ glxConvertConfigs(const __DRIcoreExtension * core,
+     return head.next;
+ }
+ 
++#if defined(TURBOVNC) && !defined(TURBOVNC_STATIC_XORG_PATH)
++char *dri_driver_path = DRI_DRIVER_PATH;
++#else
+ static const char dri_driver_path[] = DRI_DRIVER_PATH;
++#endif
+ 
+ /* Temporary define to allow building without a dri_interface.h from
+  * updated Mesa.  Some day when we don't care about Mesa that old any
+diff --git a/xorg-server-1.20.14/glx/glxscreens.h b/Xserver/glx/glxscreens.h
+index 40649f8..5f89e5d 100644
+--- a/xorg-server-1.20.14/glx/glxscreens.h
++++ b/Xserver/glx/glxscreens.h
+@@ -37,6 +37,7 @@
+ 
+ #include "extension_string.h"
+ #include "glxvndabi.h"
++#include "glx_extinit.h"
+ 
+ typedef struct __GLXconfig __GLXconfig;
+ struct __GLXconfig {
+@@ -116,7 +117,6 @@ GLint glxConvertToXVisualType(int visualType);
+ ** and DDX layers of the GLX server extension.  The methods provide an
+ ** interface for context management on a screen.
+ */
+-typedef struct __GLXscreen __GLXscreen;
+ struct __GLXscreen {
+     void (*destroy) (__GLXscreen * screen);
+ 
+diff --git a/xorg-server-1.20.14/glx/vndext.c b/Xserver/glx/vndext.c
+index 0513733..aa93900 100644
+--- a/xorg-server-1.20.14/glx/vndext.c
++++ b/Xserver/glx/vndext.c
+@@ -213,6 +213,7 @@ GlxExtensionInit(void)
+ {
+     ExtensionEntry *extEntry;
+     GlxExtensionEntry = NULL;
++    int i;
+ 
+     // Init private keys, per-screen data
+     if (!dixRegisterPrivateKey(&glvXGLVScreenPrivKey, PRIVATE_SCREEN, 0))
+@@ -244,7 +245,7 @@ GlxExtensionInit(void)
+     CallCallbacks(&vndInitCallbackListPtr, extEntry);
+ 
+     /* We'd better have found at least one vendor */
+-    for (int i = 0; i < screenInfo.numScreens; i++)
++    for (i = 0; i < screenInfo.numScreens; i++)
+         if (GlxGetVendorForScreen(serverClient, screenInfo.screens[i]))
+             return;
+     extEntry->base = 0;
+diff --git a/xorg-server-1.20.14/include/extinit.h b/Xserver/include/extinit.h
+index 46081ad..9b3a4d5 100644
+--- a/xorg-server-1.20.14/include/extinit.h
++++ b/Xserver/include/extinit.h
+@@ -1,6 +1,7 @@
+ /************************************************************
+ 
+ Copyright 1996 by Thomas E. Dickey <dickey@clark.net>
++Copyright 2017 D. R. Commander
+ 
+                         All Rights Reserved
+ 
+@@ -161,4 +162,13 @@ extern void dri3_extension_init(void);
+ #include "presentext.h"
+ #endif
+ 
++#ifdef TURBOVNC
++extern void vncExtensionInit(void);
++
++#ifdef NVCONTROL
++extern Bool noNVCTRLExtension;
++extern void nvCtrlExtensionInit(void);
++#endif
++#endif
++
+ #endif
+diff --git a/xorg-server-1.20.14/mi/miinitext.c b/Xserver/mi/miinitext.c
+index b7c7021..0e28272 100644
+--- a/xorg-server-1.20.14/mi/miinitext.c
++++ b/Xserver/mi/miinitext.c
+@@ -1,6 +1,7 @@
+ /***********************************************************
+ 
+ Copyright 1987, 1998  The Open Group
++Copyright 2012, 2015, 2017  D. R. Commander
+ 
+ Permission to use, copy, modify, distribute, and sell this software and its
+ documentation for any purpose is hereby granted without fee, provided that
+@@ -180,6 +181,12 @@ static const ExtensionModule staticExtensions[] = {
+ #ifdef GLXEXT
+     {GlxExtensionInit, "GLX", &noGlxExtension},
+ #endif
++#ifdef TURBOVNC
++    {vncExtensionInit, "VNC-EXTENSION", NULL},
++#ifdef NVCONTROL
++    {nvCtrlExtensionInit, "NV-CONTROL", &noNVCTRLExtension},
++#endif
++#endif
+ };
+ 
+ Bool
+diff --git a/xorg-server-1.20.14/os/backtrace.c b/Xserver/os/backtrace.c
+index 2aad0e3..d0447d7 100644
+--- a/xorg-server-1.20.14/os/backtrace.c
++++ b/Xserver/os/backtrace.c
+@@ -160,8 +160,10 @@ xorg_backtrace(void)
+ #else                           /* not glibc or glibc < 2.1 */
+ 
+ #if defined(__sun) && defined(__SVR4)
++#ifndef TURBOVNC
+ #define HAVE_PSTACK
+ #endif
++#endif
+ 
+ #if defined(HAVE_WALKCONTEXT)   /* Solaris 9 & later */
+ 
+diff --git a/xorg-server-1.20.14/os/log.c b/Xserver/os/log.c
+index cc82191..f5d2891 100644
+--- a/xorg-server-1.20.14/os/log.c
++++ b/Xserver/os/log.c
+@@ -640,7 +640,7 @@ LogSWrite(int verb, const char *buf, size_t len, Bool end_line)
+ void
+ LogVWrite(int verb, const char *f, va_list args)
+ {
+-    return LogVMessageVerb(X_NONE, verb, f, args);
++    LogVMessageVerb(X_NONE, verb, f, args);
+ }
+ 
+ void
+diff --git a/xorg-server-1.20.14/randr/rrmode.c b/Xserver/randr/rrmode.c
+index d34025b..d76a24d 100644
+--- a/xorg-server-1.20.14/randr/rrmode.c
++++ b/Xserver/randr/rrmode.c
+@@ -1,5 +1,6 @@
+ /*
+  * Copyright © 2006 Keith Packard
++ * Copyright © 2017 D. R. Commander
+  *
+  * Permission to use, copy, modify, distribute, and sell this software and its
+  * documentation for any purpose is hereby granted without fee, provided that
+@@ -68,6 +69,15 @@ RRModeCreate(xRRModeInfo * modeInfo, const char *name, ScreenPtr userScreen)
+     if (!RRInit())
+         return NULL;
+ 
++#ifdef TURBOVNC
++    /*
++     * The screen structure uses a signed short to represent width and height,
++     * so activating a mode with width or height > 32767 can crash the server.
++     */
++    if (modeInfo->width > MAXSHORT || modeInfo->height > MAXSHORT)
++        return NULL;
++#endif
++
+     mode = malloc(sizeof(RRModeRec) + modeInfo->nameLength + 1);
+     if (!mode)
+         return NULL;
+diff --git a/xorg-server-1.20.14/xfixes/xfixes.c b/Xserver/xfixes/xfixes.c
+index 53a6bd6..28248d4 100644
+--- a/xorg-server-1.20.14/xfixes/xfixes.c
++++ b/Xserver/xfixes/xfixes.c
+@@ -221,7 +221,27 @@ XFixesExtensionInit(void)
+         return;
+ 
+     if (XFixesSelectionInit() && XFixesCursorInit() && XFixesRegionInit() &&
++#ifdef TURBOVNC
++        /* Ubuntu 12.04 (precise) shipped a proposed/experimental patch
++         * (https://patchwork.freedesktop.org/patch/8884) to the XFixes
++         * protocol that extended the functionality of pointer barriers.  This
++         * patch was apparently never accepted upstream and was removed in
++         * 13.10 (raring).  Basically everything on Ubuntu 12.04 (probably
++         * 12.10 and 13.04 as well) that uses XFixes, including the window
++         * managers, believes that there are 3 XFixes events, but our server
++         * (and anything else built against the official X.org fixesproto)
++         * believes that there are only 2.  Since X RandR events come
++         * immediately after XFixes events in the sequence, when the TurboVNC
++         * Server sends those events to the window manager and other X clients,
++         * the X clients misinterpret the events, and desktop resizing fails.
++         * Easiest way to work around the issue is to add a slot for the
++         * unofficial XFixes event.  Refer also to
++         * https://lists.x.org/archives/xorg-devel/2012-April/030484.html
++         */
++        (extEntry = AddExtension(XFIXES_NAME, XFixesNumberEvents + 1,
++#else
+         (extEntry = AddExtension(XFIXES_NAME, XFixesNumberEvents,
++#endif
+                                  XFixesNumberErrors,
+                                  ProcXFixesDispatch, SProcXFixesDispatch,
+                                  NULL, StandardMinorOpcode)) != 0) {
+diff --git a/xorg-server-1.20.14/xkb/xkb.c b/Xserver/xkb/xkb.c
+index 68c59df..3363b1d 100644
+--- a/xorg-server-1.20.14/xkb/xkb.c
++++ b/Xserver/xkb/xkb.c
+@@ -5157,7 +5157,7 @@ _GetCountedString(char **wire_inout, ClientPtr client, char **str)
+ }
+ 
+ static Status
+-_CheckSetDoodad(char **wire_inout,
++_CheckSetDoodad(char **wire_inout, xkbSetGeometryReq *req,
+                 XkbGeometryPtr geom, XkbSectionPtr section, ClientPtr client)
+ {
+     char *wire;
+@@ -5168,6 +5168,9 @@ _CheckSetDoodad(char **wire_inout,
+     Status status;
+ 
+     dWire = (xkbDoodadWireDesc *) (*wire_inout);
++    if (!_XkbCheckRequestBounds(client, req, dWire, dWire + 1))
++        return BadLength;
++
+     any = dWire->any;
+     wire = (char *) &dWire[1];
+     if (client->swapped) {
+@@ -5270,7 +5273,7 @@ _CheckSetDoodad(char **wire_inout,
+ }
+ 
+ static Status
+-_CheckSetOverlay(char **wire_inout,
++_CheckSetOverlay(char **wire_inout, xkbSetGeometryReq *req,
+                  XkbGeometryPtr geom, XkbSectionPtr section, ClientPtr client)
+ {
+     register int r;
+@@ -5281,6 +5284,9 @@ _CheckSetOverlay(char **wire_inout,
+ 
+     wire = *wire_inout;
+     olWire = (xkbOverlayWireDesc *) wire;
++    if (!_XkbCheckRequestBounds(client, req, olWire, olWire + 1))
++        return BadLength;
++
+     if (client->swapped) {
+         swapl(&olWire->name);
+     }
+@@ -5292,6 +5298,9 @@ _CheckSetOverlay(char **wire_inout,
+         xkbOverlayKeyWireDesc *kWire;
+         XkbOverlayRowPtr row;
+ 
++        if (!_XkbCheckRequestBounds(client, req, rWire, rWire + 1))
++            return BadLength;
++
+         if (rWire->rowUnder > section->num_rows) {
+             client->errorValue = _XkbErrCode4(0x20, r, section->num_rows,
+                                               rWire->rowUnder);
+@@ -5300,6 +5309,9 @@ _CheckSetOverlay(char **wire_inout,
+         row = XkbAddGeomOverlayRow(ol, rWire->rowUnder, rWire->nKeys);
+         kWire = (xkbOverlayKeyWireDesc *) &rWire[1];
+         for (k = 0; k < rWire->nKeys; k++, kWire++) {
++            if (!_XkbCheckRequestBounds(client, req, kWire, kWire + 1))
++                return BadLength;
++
+             if (XkbAddGeomOverlayKey(ol, row,
+                                      (char *) kWire->over,
+                                      (char *) kWire->under) == NULL) {
+@@ -5333,6 +5345,9 @@ _CheckSetSections(XkbGeometryPtr geom,
+         register int r;
+         xkbRowWireDesc *rWire;
+ 
++        if (!_XkbCheckRequestBounds(client, req, sWire, sWire + 1))
++            return BadLength;
++
+         if (client->swapped) {
+             swapl(&sWire->name);
+             swaps(&sWire->top);
+@@ -5358,6 +5373,9 @@ _CheckSetSections(XkbGeometryPtr geom,
+             XkbRowPtr row;
+             xkbKeyWireDesc *kWire;
+ 
++            if (!_XkbCheckRequestBounds(client, req, rWire, rWire + 1))
++                return BadLength;
++
+             if (client->swapped) {
+                 swaps(&rWire->top);
+                 swaps(&rWire->left);
+@@ -5369,16 +5387,19 @@ _CheckSetSections(XkbGeometryPtr geom,
+             row->left = rWire->left;
+             row->vertical = rWire->vertical;
+             kWire = (xkbKeyWireDesc *) &rWire[1];
+-            for (k = 0; k < rWire->nKeys; k++) {
++            for (k = 0; k < rWire->nKeys; k++, kWire++) {
+                 XkbKeyPtr key;
+ 
++                if (!_XkbCheckRequestBounds(client, req, kWire, kWire + 1))
++                    return BadLength;
++
+                 key = XkbAddGeomKey(row);
+                 if (!key)
+                     return BadAlloc;
+-                memcpy(key->name.name, kWire[k].name, XkbKeyNameLength);
+-                key->gap = kWire[k].gap;
+-                key->shape_ndx = kWire[k].shapeNdx;
+-                key->color_ndx = kWire[k].colorNdx;
++                memcpy(key->name.name, kWire->name, XkbKeyNameLength);
++                key->gap = kWire->gap;
++                key->shape_ndx = kWire->shapeNdx;
++                key->color_ndx = kWire->colorNdx;
+                 if (key->shape_ndx >= geom->num_shapes) {
+                     client->errorValue = _XkbErrCode3(0x10, key->shape_ndx,
+                                                       geom->num_shapes);
+@@ -5390,14 +5411,14 @@ _CheckSetSections(XkbGeometryPtr geom,
+                     return BadMatch;
+                 }
+             }
+-            rWire = (xkbRowWireDesc *) &kWire[rWire->nKeys];
++            rWire = (xkbRowWireDesc *)kWire;
+         }
+         wire = (char *) rWire;
+         if (sWire->nDoodads > 0) {
+             register int d;
+ 
+             for (d = 0; d < sWire->nDoodads; d++) {
+-                status = _CheckSetDoodad(&wire, geom, section, client);
++                status = _CheckSetDoodad(&wire, req, geom, section, client);
+                 if (status != Success)
+                     return status;
+             }
+@@ -5406,7 +5427,7 @@ _CheckSetSections(XkbGeometryPtr geom,
+             register int o;
+ 
+             for (o = 0; o < sWire->nOverlays; o++) {
+-                status = _CheckSetOverlay(&wire, geom, section, client);
++                status = _CheckSetOverlay(&wire, req, geom, section, client);
+                 if (status != Success)
+                     return status;
+             }
+@@ -5440,6 +5461,9 @@ _CheckSetShapes(XkbGeometryPtr geom,
+             xkbOutlineWireDesc *olWire;
+             XkbOutlinePtr ol;
+ 
++            if (!_XkbCheckRequestBounds(client, req, shapeWire, shapeWire + 1))
++                return BadLength;
++
+             shape =
+                 XkbAddGeomShape(geom, shapeWire->name, shapeWire->nOutlines);
+             if (!shape)
+@@ -5450,21 +5474,27 @@ _CheckSetShapes(XkbGeometryPtr geom,
+                 XkbPointPtr pt;
+                 xkbPointWireDesc *ptWire;
+ 
++                if (!_XkbCheckRequestBounds(client, req, olWire, olWire + 1))
++                    return BadLength;
++
+                 ol = XkbAddGeomOutline(shape, olWire->nPoints);
+                 if (!ol)
+                     return BadAlloc;
+                 ol->corner_radius = olWire->cornerRadius;
+                 ptWire = (xkbPointWireDesc *) &olWire[1];
+-                for (p = 0, pt = ol->points; p < olWire->nPoints; p++, pt++) {
+-                    pt->x = ptWire[p].x;
+-                    pt->y = ptWire[p].y;
++                for (p = 0, pt = ol->points; p < olWire->nPoints; p++, pt++, ptWire++) {
++                    if (!_XkbCheckRequestBounds(client, req, ptWire, ptWire + 1))
++                        return BadLength;
++
++                    pt->x = ptWire->x;
++                    pt->y = ptWire->y;
+                     if (client->swapped) {
+                         swaps(&pt->x);
+                         swaps(&pt->y);
+                     }
+                 }
+                 ol->num_points = olWire->nPoints;
+-                olWire = (xkbOutlineWireDesc *) (&ptWire[olWire->nPoints]);
++                olWire = (xkbOutlineWireDesc *)ptWire;
+             }
+             if (shapeWire->primaryNdx != XkbNoShape)
+                 shape->primary = &shape->outlines[shapeWire->primaryNdx];
+@@ -5561,12 +5591,15 @@ _CheckSetGeom(XkbGeometryPtr geom, xkbSetGeometryReq * req, ClientPtr client)
+         return status;
+ 
+     for (i = 0; i < req->nDoodads; i++) {
+-        status = _CheckSetDoodad(&wire, geom, NULL, client);
++        status = _CheckSetDoodad(&wire, req, geom, NULL, client);
+         if (status != Success)
+             return status;
+     }
+ 
+     for (i = 0; i < req->nKeyAliases; i++) {
++        if (!_XkbCheckRequestBounds(client, req, wire, wire + XkbKeyNameLength))
++                return BadLength;
++
+         if (XkbAddGeomKeyAlias(geom, &wire[XkbKeyNameLength], wire) == NULL)
+             return BadAlloc;
+         wire += 2 * XkbKeyNameLength;
+@@ -6551,7 +6584,8 @@ ProcXkbGetDeviceInfo(ClientPtr client)
+ static char *
+ CheckSetDeviceIndicators(char *wire,
+                          DeviceIntPtr dev,
+-                         int num, int *status_rtrn, ClientPtr client)
++                         int num, int *status_rtrn, ClientPtr client,
++                         xkbSetDeviceInfoReq * stuff)
+ {
+     xkbDeviceLedsWireDesc *ledWire;
+     int i;
+@@ -6559,6 +6593,11 @@ CheckSetDeviceIndicators(char *wire,
+ 
+     ledWire = (xkbDeviceLedsWireDesc *) wire;
+     for (i = 0; i < num; i++) {
++        if (!_XkbCheckRequestBounds(client, stuff, ledWire, ledWire + 1)) {
++            *status_rtrn = BadLength;
++            return (char *) ledWire;
++        }
++
+         if (client->swapped) {
+             swaps(&ledWire->ledClass);
+             swaps(&ledWire->ledID);
+@@ -6586,6 +6625,11 @@ CheckSetDeviceIndicators(char *wire,
+             atomWire = (CARD32 *) &ledWire[1];
+             if (nNames > 0) {
+                 for (n = 0; n < nNames; n++) {
++                    if (!_XkbCheckRequestBounds(client, stuff, atomWire, atomWire + 1)) {
++                        *status_rtrn = BadLength;
++                        return (char *) atomWire;
++                    }
++
+                     if (client->swapped) {
+                         swapl(atomWire);
+                     }
+@@ -6597,6 +6641,10 @@ CheckSetDeviceIndicators(char *wire,
+             mapWire = (xkbIndicatorMapWireDesc *) atomWire;
+             if (nMaps > 0) {
+                 for (n = 0; n < nMaps; n++) {
++                    if (!_XkbCheckRequestBounds(client, stuff, mapWire, mapWire + 1)) {
++                        *status_rtrn = BadLength;
++                        return (char *) mapWire;
++                    }
+                     if (client->swapped) {
+                         swaps(&mapWire->virtualMods);
+                         swapl(&mapWire->ctrls);
+@@ -6648,11 +6696,6 @@ SetDeviceIndicators(char *wire,
+         xkbIndicatorMapWireDesc *mapWire;
+         XkbSrvLedInfoPtr sli;
+ 
+-        if (!_XkbCheckRequestBounds(client, stuff, ledWire, ledWire + 1)) {
+-            *status_rtrn = BadLength;
+-            return (char *) ledWire;
+-        }
+-
+         namec = mapc = statec = 0;
+         sli = XkbFindSrvLedInfo(dev, ledWire->ledClass, ledWire->ledID,
+                                 XkbXI_IndicatorMapsMask);
+@@ -6671,10 +6714,6 @@ SetDeviceIndicators(char *wire,
+             memset((char *) sli->names, 0, XkbNumIndicators * sizeof(Atom));
+             for (n = 0, bit = 1; n < XkbNumIndicators; n++, bit <<= 1) {
+                 if (ledWire->namesPresent & bit) {
+-                    if (!_XkbCheckRequestBounds(client, stuff, atomWire, atomWire + 1)) {
+-                        *status_rtrn = BadLength;
+-                        return (char *) atomWire;
+-                    }
+                     sli->names[n] = (Atom) *atomWire;
+                     if (sli->names[n] == None)
+                         ledWire->namesPresent &= ~bit;
+@@ -6692,10 +6731,6 @@ SetDeviceIndicators(char *wire,
+         if (ledWire->mapsPresent) {
+             for (n = 0, bit = 1; n < XkbNumIndicators; n++, bit <<= 1) {
+                 if (ledWire->mapsPresent & bit) {
+-                    if (!_XkbCheckRequestBounds(client, stuff, mapWire, mapWire + 1)) {
+-                        *status_rtrn = BadLength;
+-                        return (char *) mapWire;
+-                    }
+                     sli->maps[n].flags = mapWire->flags;
+                     sli->maps[n].which_groups = mapWire->whichGroups;
+                     sli->maps[n].groups = mapWire->groups;
+@@ -6731,13 +6766,17 @@ SetDeviceIndicators(char *wire,
+ }
+ 
+ static int
+-_XkbSetDeviceInfo(ClientPtr client, DeviceIntPtr dev,
++_XkbSetDeviceInfoCheck(ClientPtr client, DeviceIntPtr dev,
+                   xkbSetDeviceInfoReq * stuff)
+ {
+     char *wire;
+ 
+     wire = (char *) &stuff[1];
+     if (stuff->change & XkbXI_ButtonActionsMask) {
++        int sz = stuff->nBtns * SIZEOF(xkbActionWireDesc);
++        if (!_XkbCheckRequestBounds(client, stuff, wire, (char *) wire + sz))
++            return BadLength;
++
+         if (!dev->button) {
+             client->errorValue = _XkbErrCode2(XkbErr_BadClass, ButtonClass);
+             return XkbKeyboardErrorCode;
+@@ -6748,13 +6787,13 @@ _XkbSetDeviceInfo(ClientPtr client, DeviceIntPtr dev,
+                              dev->button->numButtons);
+             return BadMatch;
+         }
+-        wire += (stuff->nBtns * SIZEOF(xkbActionWireDesc));
++        wire += sz;
+     }
+     if (stuff->change & XkbXI_IndicatorsMask) {
+         int status = Success;
+ 
+         wire = CheckSetDeviceIndicators(wire, dev, stuff->nDeviceLedFBs,
+-                                        &status, client);
++                                        &status, client, stuff);
+         if (status != Success)
+             return status;
+     }
+@@ -6765,8 +6804,8 @@ _XkbSetDeviceInfo(ClientPtr client, DeviceIntPtr dev,
+ }
+ 
+ static int
+-_XkbSetDeviceInfoCheck(ClientPtr client, DeviceIntPtr dev,
+-                       xkbSetDeviceInfoReq * stuff)
++_XkbSetDeviceInfo(ClientPtr client, DeviceIntPtr dev,
++                  xkbSetDeviceInfoReq * stuff)
+ {
+     char *wire;
+     xkbExtensionDeviceNotify ed;
+@@ -6790,8 +6829,6 @@ _XkbSetDeviceInfoCheck(ClientPtr client, DeviceIntPtr dev,
+         if (stuff->firstBtn + stuff->nBtns > nBtns)
+             return BadValue;
+         sz = stuff->nBtns * SIZEOF(xkbActionWireDesc);
+-        if (!_XkbCheckRequestBounds(client, stuff, wire, (char *) wire + sz))
+-            return BadLength;
+         memcpy((char *) &acts[stuff->firstBtn], (char *) wire, sz);
+         wire += sz;
+         ed.reason |= XkbXI_ButtonActionsMask;
+diff --git a/xorg-server-1.20.14/xkb/xkbInit.c b/Xserver/xkb/xkbInit.c
+index 9e45b4b..ddd5ef7 100644
+--- a/xorg-server-1.20.14/xkb/xkbInit.c
++++ b/Xserver/xkb/xkbInit.c
+@@ -767,6 +767,30 @@ XkbProcessArguments(int argc, char *argv[], int i)
+             return -1;
+         }
+     }
++#if defined(TURBOVNC) && !defined(TURBOVNC_XORG_STATIC_PATHS)
++    else if (strncmp(argv[i], "-xkbcompdir", 11) == 0) {
++        if (++i < argc) {
++#if !defined(WIN32) && !defined(__CYGWIN__)
++            if (getuid() != geteuid()) {
++                LogMessage(X_WARNING,
++                           "-xkbcompdir is not available for setuid X servers\n");
++                return -1;
++            }
++            else
++#endif
++            {
++                if (strlen(argv[i]) < PATH_MAX) {
++                    XkbBinDirectory = argv[i];
++                    return 2;
++                }
++                else {
++                    LogMessage(X_ERROR, "-xkbcompdir pathname too long\n");
++                    return -1;
++                }
++            }
++        }
++    }
++#endif
+     else if ((strncmp(argv[i], "-accessx", 8) == 0) ||
+              (strncmp(argv[i], "+accessx", 8) == 0)) {
+         int j = 1;
+diff --git a/xorg-server-1.20.14/xkb/xkbUtils.c b/Xserver/xkb/xkbUtils.c
+index 8975ade..9bc51fc 100644
+--- a/xorg-server-1.20.14/xkb/xkbUtils.c
++++ b/Xserver/xkb/xkbUtils.c
+@@ -1327,6 +1327,7 @@ _XkbCopyNames(XkbDescPtr src, XkbDescPtr dst)
+         }
+         else {
+             free(dst->names->radio_groups);
++            dst->names->radio_groups = NULL;
+         }
+         dst->names->num_rg = src->names->num_rg;
+ 

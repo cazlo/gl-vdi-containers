@@ -1,0 +1,38 @@
+=======================
+Xvnc - the VNC X server
+=======================
+
+This is the top-level directory for Xvnc, the VNC X server (or the X VNC
+server, depending on how you look at it.)
+
+TurboVNC's implementation of Xvnc is built upon the X.org code base.  The VNC
+server portion of the code was originally based on TightVNC 1.3.x, but the
+current version also borrows code and/or algorithms from other VNC
+implementations (including xf4vnc and TigerVNC) and contains a great deal of
+original code.
+
+The code specific to TurboVNC is located in the programs/Xserver/hw/vnc
+directory.  The rest of the code is a stripped-down version of Xorg, including
+only the features necessary to support Xvnc.
+
+Security Extensions
+-------------------
+This version of Xvnc incorporates code that allows different authentication
+methods to be selected at run time.  This code supports the standard
+"No Authentication" and "VNC Password" authentication methods as well as
+methods for using one-time passwords (OTP) and Pluggable Authentication Modules
+(PAM).
+
+The Xvnc server will look in the security configuration file (default
+"/etc/turbovncserver-security.conf") at run time for security configuration
+directives.
+
+To enable PAM support (required for the "PAM User/Password" authentication
+method), the TVNC_USEPAM CMake variable must be enabled (this is the default.)
+To disable PAM support, pass -DTVNC_USEPAM=0 to CMake when configuring the
+build.
+
+NOTE: interaction with PAM is limited to supplying a username and password.
+The exchange of any additional information is not supported.
+
+See the Xvnc man page for details on the security extensions.

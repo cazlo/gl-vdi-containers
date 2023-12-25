@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+	<script>
+	function installationCheck() {
+		if (!(system.compareVersions(system.version.ProductVersion, '10.7') >= 0)) {
+			my.result.title = system.localizedString('Cannot install @CMAKE_PROJECT_NAME@');
+			my.result.message = system.localizedString('This package requires OS X/macOS 10.7 or later.');
+			my.result.type = 'Fatal';
+			return false;
+		}
+	}
+	</script>
+
+	<title>@CMAKE_PROJECT_NAME@</title>
+	<welcome file="Welcome.txt" />
+	<readme file="ReadMe.txt" />
+	<license file="License.rtf" />
+	<domains
+		enable_anywhere="false"
+		enable_currentUserHome="false"
+		enable_localSystem="true"
+	/>
+	<installation-check script="installationCheck()" />
+	<options customize="never" hostArchitectures="@CPU_TYPE@" />
+	<choices-outline>
+		<line choice="default">
+			<line choice="@PKGID@"/>
+		</line>
+	</choices-outline>
+	<choice id="default"/>
+	<choice id="@PKGID@" visible="false">
+		<pkg-ref id="@PKGID@"/>
+	</choice>
+	<pkg-ref auth="root"
+		id="@PKGID@">@PKGNAME@.pkg</pkg-ref>
+</installer-gui-script>
