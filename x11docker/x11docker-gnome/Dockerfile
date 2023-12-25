@@ -29,7 +29,7 @@
 #  - gnome-usage crashes with a segfault.
 #  - Wayland setups do not work.
 
-FROM debian:bullseye
+FROM debian:bookworm
 ENV LANG en_US.UTF-8
 ENV SHELL=/bin/bash
 
@@ -74,7 +74,7 @@ RUN apt-get update && \
       gnome-control-center \
       gnome-system-monitor \
       gnome-terminal \
-      gnome-tweak-tool \
+      gnome-tweaks \
       nautilus && \
     /cleanup
 

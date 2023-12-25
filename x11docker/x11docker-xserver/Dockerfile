@@ -9,13 +9,13 @@
 #
 # x11docker on github: https://github.com/mviereck/x11docker
 
-FROM debian:bullseye AS nxbuild
+FROM debian:bookworm AS nxbuild
 
 #########################
 
 # build patched nxagent from source. Allows to run with /tmp/.X11-unix not to be owned by root.
 # https://github.com/ArcticaProject/nx-libs/issues/1034
-RUN echo "deb-src http://deb.debian.org/debian bullseye main" >> /etc/apt/sources.list && \
+RUN echo "deb-src http://deb.debian.org/debian bookworm main" >> /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y build-essential devscripts && \
     apt-get build-dep -y nxagent && \
@@ -26,7 +26,7 @@ RUN echo "deb-src http://deb.debian.org/debian bullseye main" >> /etc/apt/source
     sed -i 's/# define XtransFailSoft NO/# define XtransFailSoft YES/' nx-X11/config/cf/X11.rules && \
     debuild -b -uc -us
 
-FROM debian:bullseye
+FROM debian:bookworm
 COPY --from=nxbuild /nxbuild/nxagent_3.*.deb /nxagent.deb
 
 # cleanup script for use after apt-get
@@ -49,9 +49,6 @@ RUN apt-get update && \
 RUN apt-get update && \
     env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         kwin-wayland \
-        kwin-wayland-backend-drm \
-        kwin-wayland-backend-wayland \
-        kwin-wayland-backend-x11 \
         weston \
         xserver-xephyr \
         xserver-xorg \
@@ -59,6 +56,10 @@ RUN apt-get update && \
         xvfb \
         xwayland && \
     /apt_cleanup
+#        kwin-wayland-backend-drm \
+#        kwin-wayland-backend-wayland \
+#        kwin-wayland-backend-x11 \ todo find replacement for this
+
 
 # xpra from xpra repository
 RUN apt-get update && \
@@ -68,7 +69,7 @@ RUN apt-get update && \
         ca-certificates && \
     wget -q http://xpra.org/gpg.asc -O xpra-gpg.asc && \
     apt-key add xpra-gpg.asc && \
-    echo "deb http://xpra.org/ bullseye main" > /etc/apt/sources.list.d/xpra.list && \
+    echo "deb http://xpra.org/ bookworm main" > /etc/apt/sources.list.d/xpra.list && \
     apt-get update && \
     env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         xpra  \
