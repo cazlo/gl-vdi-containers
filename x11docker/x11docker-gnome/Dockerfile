@@ -84,4 +84,10 @@ RUN apt-get update && \
       gnome-shell-extension* && \
     /cleanup
 
+RUN    apt-get update && env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      libxv1 \
+      mesa-utils \
+      mesa-utils-extra \
+       xpra
+
 CMD gnome-shell

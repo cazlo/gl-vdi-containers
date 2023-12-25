@@ -165,4 +165,7 @@ LABEL options_console='--kwin --weston --weston-xwayland --xorg'
 LABEL gpu='MESA'
 LABEL windowmanager='openbox'
 
+RUN apt-get update && \
+    env DEBIAN_FRONTEND=noninteractive apt-get install -y xpra xpra-x11
+
 ENTRYPOINT ["/usr/bin/catatonit", "--"]
