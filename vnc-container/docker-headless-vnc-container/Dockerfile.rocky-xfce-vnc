@@ -15,6 +15,7 @@ LABEL io.k8s.description="Headless VNC Container with Xfce window manager, firef
 # VNC port:5901
 # noVNC webport, connect via http://IP:6901/?password=vncpassword
 ENV DISPLAY=:1 \
+    VGL_DISPLAY=:1 \
     VNC_PORT=5901 \
     NO_VNC_PORT=6901
 EXPOSE $VNC_PORT $NO_VNC_PORT
@@ -40,7 +41,7 @@ RUN $INST_SCRIPTS/tools.sh
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
 ### Install xvnc-server & noVNC - HTML5 based VNC viewer
-RUN $INST_SCRIPTS/tigervnc.sh
+#RUN $INST_SCRIPTS/tigervnc.sh
 RUN $INST_SCRIPTS/no_vnc.sh
 
 ### Install firefox and chrome browser
@@ -57,7 +58,32 @@ ADD ./src/common/scripts $STARTUPDIR
 RUN $INST_SCRIPTS/set_user_permission.sh $STARTUPDIR $HOME
 RUN $INST_SCRIPTS/rocky.sh
 
-USER 1000
+#COPY ./src/amdgpu/xorg/ /usr/share/X11/xorg.conf.d/
+
+RUN dnf config-manager --set-enabled crb
+COPY ./src/amdgpu/amdgpu.repo /etc/yum.repos.d/amdgpu.repo
+COPY ./src/amdgpu/rocm.repo /etc/yum.repos.d/rocm.repo
+RUN yum clean all
+RUN dnf install -y rocm-dev
+
+RUN dnf install -y mesa-libGLU libXv
+COPY ./src/amdgpu/VirtualGL-3.1.x86_64.rpm /tmp/VirtualGL-3.1.x86_64.rpm
+RUN rpm -i /tmp/VirtualGL-3.1.x86_64.rpm
+COPY ./src/amdgpu/turbovnc.repo /etc/yum.repos.d/turbovnc.repo
+RUN dnf install -y turbovnc  xorg-x11-xauth glx-utils
+
+RUN printf "1\nn\nn\nn\nx\n" | /opt/VirtualGL/bin/vglserver_config
+#RUN groupadd -g 39 videodocker
+#RUN groupadd -g 105 renderdocker
+RUN adduser -u 1000 user
+#RUN usermod -a -G videodocker user
+#RUN usermod -a -G renderdocker user
+RUN chown -R 1000:1000 $HOME/.cache
+
+COPY ./src/amdgpu/xorg/99-virtualgl-dri.conf /etc/X11/xorg.conf.d/99-virtualgl-dri.conf
+COPY ./src/amdgpu/99-virtualgl-dri.rules /etc/udev/rules.d/99-virtualgl-dri.rules
+
+USER user
 
 ENTRYPOINT ["/dockerstartup/vnc_startup.sh"]
 CMD ["--wait"]
