@@ -199,7 +199,7 @@ git subtree add --prefix virtualgl/virtualgl https://github.com/VirtualGL/virtua
 git subtree add --prefix x11docker/x11docker https://github.com/mviereck/x11docker.git master  --squash
 git subtree add --prefix x11docker/x11docker-gnome https://github.com/mviereck/dockerfile-x11docker-gnome.git master  --squash
 git subtree add --prefix x11docker/x11docker-xfce https://github.com/mviereck/dockerfile-x11docker-xfce.git master  --squash
-git subtree add --prefix x11docker/x11docker-xserver https://github.com/mviereck/dockerfile-x11docker-xserver.git master --squash
+git subtree add --prefix x11docker/x11docker-xserver https://github.com/mviereck/dockerfile-x11docker-xserver.git main --squash
 
 
 ```
