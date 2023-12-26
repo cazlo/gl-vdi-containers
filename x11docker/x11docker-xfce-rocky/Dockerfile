@@ -107,4 +107,18 @@ RUN dnf install -y rocm-dev
 
 RUN dnf install -y mesa-dri-drivers mesa-libEGL #libgl1-mesa-dri
 
+RUN dnf install -y epel-release
+RUN dnf install -y phoronix-test-suite unzip xz
+RUN phoronix-test-suite install-dependencies pts/blender
+
+USER 1000
+
+RUN phoronix-test-suite install pts/blender
+# todo pre-cache install of blender test(s)? or maybe stick them on via volume mount instead for faster rebuilds
+# note blender is like 1.5GB with relatively slow downloads from the public internet (most time comes from the .blend files)
+
+USER root
+RUN dnf install -y rocm-hip-runtime rocm-hip-sdk
+USER 1000
+
 CMD startxfce4
