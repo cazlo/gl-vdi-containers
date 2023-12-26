@@ -32,9 +32,30 @@ ENV HOME=/headless \
     VNC_VIEW_ONLY=false
 WORKDIR $HOME
 
+# Common tools
+RUN dnf -y install epel-release
+RUN dnf -y install yum-utils
+RUN dnf config-manager --set-enabled crb
+
+# AMD GPU
+COPY ./vnc-container/docker-headless-vnc-container/src/amdgpu/amdgpu.repo /etc/yum.repos.d/amdgpu.repo
+COPY ./vnc-container/docker-headless-vnc-container/src/amdgpu/rocm.repo /etc/yum.repos.d/rocm.repo
+RUN yum clean all
+RUN dnf install -y rocm-dev
+#COPY ./vnc-container/docker-headless-vnc-container/src/amdgpu/xorg/ /usr/share/X11/xorg.conf.d/
+
+# TurboVNC + VirtualGL
+RUN dnf install -y mesa-libGLU libXv libEGL libXtst xorg-x11-xauth glx-utils
+COPY ./vnc-container/docker-headless-vnc-container/src/amdgpu/VirtualGL-3.1.x86_64.rpm /tmp/VirtualGL-3.1.x86_64.rpm
+RUN rpm -i /tmp/VirtualGL-3.1.x86_64.rpm
+COPY ./vnc-container/docker-headless-vnc-container/src/amdgpu/turbovnc.repo /etc/yum.repos.d/turbovnc.repo
+RUN dnf install -y turbovnc
+
+RUN printf "1\nn\nn\nn\nx\n" | /opt/VirtualGL/bin/vglserver_config
+
 ### Add all install scripts for further steps
-ADD ./src/common/install/ $INST_SCRIPTS/
-ADD ./src/rocky/install/ $INST_SCRIPTS/
+ADD ./vnc-container/docker-headless-vnc-container/src/common/install/ $INST_SCRIPTS/
+ADD ./vnc-container/docker-headless-vnc-container/src/rocky/install/ $INST_SCRIPTS/
 
 ### Install some common tools
 RUN $INST_SCRIPTS/tools.sh
@@ -50,39 +71,38 @@ RUN $INST_SCRIPTS/chrome.sh
 
 ### Install xfce UI
 RUN $INST_SCRIPTS/xfce_ui.sh
-ADD ./src/common/xfce/ $HOME/
+ADD ./vnc-container/docker-headless-vnc-container/src/common/xfce/ $HOME/
 
 ### configure startup
 RUN $INST_SCRIPTS/libnss_wrapper.sh
-ADD ./src/common/scripts $STARTUPDIR
+ADD ./vnc-container/docker-headless-vnc-container/src/common/scripts $STARTUPDIR
 RUN $INST_SCRIPTS/set_user_permission.sh $STARTUPDIR $HOME
 RUN $INST_SCRIPTS/rocky.sh
 
-#COPY ./src/amdgpu/xorg/ /usr/share/X11/xorg.conf.d/
 
-RUN dnf config-manager --set-enabled crb
-COPY ./src/amdgpu/amdgpu.repo /etc/yum.repos.d/amdgpu.repo
-COPY ./src/amdgpu/rocm.repo /etc/yum.repos.d/rocm.repo
-RUN yum clean all
-RUN dnf install -y rocm-dev
-
-RUN dnf install -y mesa-libGLU libXv
-COPY ./src/amdgpu/VirtualGL-3.1.x86_64.rpm /tmp/VirtualGL-3.1.x86_64.rpm
-RUN rpm -i /tmp/VirtualGL-3.1.x86_64.rpm
-COPY ./src/amdgpu/turbovnc.repo /etc/yum.repos.d/turbovnc.repo
-RUN dnf install -y turbovnc  xorg-x11-xauth glx-utils
-
-RUN printf "1\nn\nn\nn\nx\n" | /opt/VirtualGL/bin/vglserver_config
 #RUN groupadd -g 39 videodocker
 #RUN groupadd -g 105 renderdocker
 RUN adduser -u 1000 user
 #RUN usermod -a -G videodocker user
 #RUN usermod -a -G renderdocker user
-RUN chown -R 1000:1000 $HOME/.cache
+#RUN chown -R 1000:1000 $HOME/.cache
 
-COPY ./src/amdgpu/xorg/99-virtualgl-dri.conf /etc/X11/xorg.conf.d/99-virtualgl-dri.conf
-COPY ./src/amdgpu/99-virtualgl-dri.rules /etc/udev/rules.d/99-virtualgl-dri.rules
+COPY ./vnc-container/docker-headless-vnc-container/src/amdgpu/xorg/99-virtualgl-dri.conf /etc/X11/xorg.conf.d/99-virtualgl-dri.conf
+COPY ./vnc-container/docker-headless-vnc-container/src/amdgpu/99-virtualgl-dri.rules /etc/udev/rules.d/99-virtualgl-dri.rules
 
+#COPY ./phoronix-test-suite/phoronix-test-suite /opt/phoronix-test-suite todo
+#RUN dnf install -y epel-release
+RUN dnf install -y phoronix-test-suite unzip xz
+
+USER user
+
+RUN phoronix-test-suite install-dependencies pts/blender
+RUN phoronix-test-suite install pts/blender
+# todo pre-cache install of blender test(s)? or maybe stick them on via volume mount instead for faster rebuilds
+# note blender is like 1.5GB with relatively slow downloads from the public internet (most time comes from the .blend files)
+
+USER root
+RUN dnf install -y rocm-hip-runtime rocm-hip-sdk
 USER user
 
 ENTRYPOINT ["/dockerstartup/vnc_startup.sh"]

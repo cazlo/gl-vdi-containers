@@ -3,8 +3,8 @@ version: "2"
 services:
   vnc-xfce:
     build:
-        context: .
-        dockerfile: Dockerfile.rocky-xfce-vnc
+        context: ../../
+        dockerfile: ./vnc-container/docker-headless-vnc-container/Dockerfile.rocky-xfce-vnc
     volumes:
       - /dev/shm:/dev/shm
 
@@ -32,7 +32,7 @@ services:
     group_add:
       - video
       - render
-#      - "39" # video
-#      - "105" # render
+      - "44" # video
+      - "109" # render
 #      - "226," #mystery
 #      - "226" # mystery
