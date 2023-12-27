@@ -13,14 +13,14 @@ build-x11docker-all:
 
 x_server_in_container="--xc" # empty string to not use this
 network="bridge" # bridge, none, or already existing docker network name
-
+SHELL=/bin/bash
 run-x11docker-xfce-rocky:
 	x11docker  --backend docker --desktop \
 	 --weston-xwayland \
 	 --network=$(network) \
 	 $(x_server_in_container) \
 	 --share='/dev/kfd' --gpu \
-	 --share='~/.local/share/x11docker/blender' \
+	 --share='~/.phoronix-test-suite' \
 	 --composite \
 	 x11docker/xfce-rocky
 
@@ -30,7 +30,7 @@ run-x11docker-xfce:
 	 --network=$(network) \
 	 $(x_server_in_container) \
 	 --share='/dev/kfd' --gpu \
-	 --share='~/.local/share/x11docker/blender' \
+	 --share='~/.phoronix-test-suite' \
 	 --composite \
 	 x11docker/xfce
 
@@ -40,6 +40,13 @@ run-x11docker-gnome:
 	 --network=$(network) \
 	 $(x_server_in_container) \
 	 --share='/dev/kfd' --gpu \
-	 --share='~/.local/share/x11docker/blender' \
+	 --share='~/.phoronix-test-suite' \
 	 --init=systemd \
 	 x11docker/gnome
+
+# ~16 second, only GPU
+# ./blender -noaudio --enable-autoexec -b ../bmw27_gpu.blend -o output.test -x 1 -F JPEG -f 1 -- --cycles-device HIP
+# ~20 second, GPU+GPU
+# ./blender -noaudio --enable-autoexec -b ../bmw27_gpu.blend -o output.test -x 1 -F JPEG -f 1 -- --cycles-device HIP+CPU
+# runs OK in VNC and x11docker on 22.04 + 7900xt
+# in VNC can run this command at same time as virtualgl accelerated blender GUI, but saw at least 1 driver crash because of this
