@@ -6,12 +6,10 @@ services:
         context: ../../
         dockerfile: ./vnc-container/docker-headless-vnc-container/Dockerfile.rocky-xfce-vnc
     volumes:
-      - /dev/shm:/dev/shm
-
+      - /dev/shm:/dev/shm # todo probably not necessary
     ports:
       - "5901:5901"
       - "6901:6901"
-      - "8443:8443"
     environment:
       DEBUG: "true"
       DISPLAY: ":1"
