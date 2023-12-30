@@ -16,16 +16,21 @@ services:
       DEBUG: "true"
       DISPLAY: ":1"
       VGL_DISPLAY: "/dev/dri/card0"
-      VNC_RESOLUTION: "3840x2160"
+      # TURBO_VNC: "true"
+      # TURBO_VNC_VIRTUALGL: "true"
+      # TIGER_VNC_VIRTUALGL: "true"
+      # VNC_RESOLUTION: "3840x2160"
     devices:
       - "/dev/kfd:/dev/kfd"
-      - "/dev/dri/:/dev/dri/"
+#      - "/dev/dri/:/dev/dri/"
       - "/dev/vga_arbiter:/dev/vga_arbiter"
       - "/dev/dri/renderD128:/dev/dri/renderD128"
       - "/dev/dri/card0:/dev/dri/card0"
     tty: true
     command:
       - /bin/bash
+#    security_opt:
+#      - seccomp=unconfined
 #    user: "root"
     user: "1000:1000"
 #    userns_mode: "host"
