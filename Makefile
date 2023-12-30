@@ -1,8 +1,44 @@
-build-vnc-container:
-	docker build -t rocky-xfce-vnc -f vnc-container/docker-headless-vnc-container/Dockerfile.rocky-xfce-vnc .
 
-build-run-vnc-container:
-	docker-compose -f vnc-container/docker-headless-vnc-container/docker-compose.yml up --build
+############## vnc container pipeline
+
+####################### base image
+build-rocky-gpu-container:
+	$(MAKE) -j 3 \
+ 		build-rocky-amd-gpu-container \
+ 		build-rocky-intel-gpu-container \
+ 		build-rocky-nvidia-gpu-container
+
+build-rocky-amd-gpu:
+	env BUILDKIT_PROGRESS=plain docker build -t rocky-amd-gpu -f vnc-container/docker-headless-vnc-container/Dockerfile.rocky-amd-gpu .
+
+build-rocky-intel-gpu:
+	env BUILDKIT_PROGRESS=plain docker build -t rocky-intel-gpu -f vnc-container/docker-headless-vnc-container/Dockerfile.rocky-intel-gpu .
+
+build-rocky-nvidia-gpu:
+	env BUILDKIT_PROGRESS=plain docker build -t rocky-nvidia-gpu -f vnc-container/docker-headless-vnc-container/Dockerfile.rocky-nvidia-gpu .
+
+####################### Running VNC images
+build-run-vnc-xfce-rocky-amdgpu:
+	env BUILDKIT_PROGRESS=plain docker compose -f vnc-container/docker-headless-vnc-container/docker-compose.yml \
+		run --service-ports --rm --build vnc-xfce-rocky-amdgpu
+
+build-run-vnc-xfce-rocky-nvidiagpu:
+	env BUILDKIT_PROGRESS=plain docker compose -f vnc-container/docker-headless-vnc-container/docker-compose.yml \
+		run --service-ports --rm --build vnc-xfce-rocky-nvidiagpu
+
+
+####################### Running XPRA images
+build-run-xpra-xfce-rocky-amdgpu:
+	env BUILDKIT_PROGRESS=plain docker compose -f vnc-container/docker-headless-vnc-container/docker-compose.yml \
+		run --service-ports --rm --build xpra-xfce-rocky-amdgpu
+
+build-run-xpra-xfce-rocky-intelgpu:
+	env BUILDKIT_PROGRESS=plain docker compose -f vnc-container/docker-headless-vnc-container/docker-compose.yml \
+		run --service-ports --rm --build xpra-xfce-rocky-intelgpu
+
+
+
+############### x11docker pipeline
 
 build-x11docker-all:
 	cd x11docker && \

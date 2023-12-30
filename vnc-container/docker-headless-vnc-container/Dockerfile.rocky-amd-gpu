@@ -1,0 +1,30 @@
+FROM rockylinux:9
+
+MAINTAINER Drew Paettie "cazlo@users.noreply.github.com"
+ENV REFRESHED_AT 2023-12-30
+
+# Common tools
+RUN dnf -y install epel-release
+RUN dnf -y install yum-utils
+RUN dnf config-manager --set-enabled crb
+
+# AMD GPU
+COPY ./vnc-container/docker-headless-vnc-container/src/gpu/amdgpu.repo /etc/yum.repos.d/amdgpu.repo
+COPY ./vnc-container/docker-headless-vnc-container/src/gpu/rocm.repo /etc/yum.repos.d/rocm.repo
+#COPY ./vnc-container/docker-headless-vnc-container/src/gpu/xorg/ /usr/share/X11/xorg.conf.d/
+RUN yum clean all
+RUN dnf install -y rocm-hip-runtime rocm-hip-sdk
+
+
+# TurboVNC + VirtualGL
+RUN dnf install -y mesa-libGLU libXv libEGL libXtst xorg-x11-xauth glx-utils
+# todo build from source
+COPY ./vnc-container/docker-headless-vnc-container/src/gpu/VirtualGL-3.1.x86_64.rpm /tmp/VirtualGL-3.1.x86_64.rpm
+RUN rpm -i /tmp/VirtualGL-3.1.x86_64.rpm
+
+RUN printf "1\nn\nn\nn\nx\n" | /opt/VirtualGL/bin/vglserver_config
+
+COPY ./vnc-container/docker-headless-vnc-container/src/gpu/xorg/99-virtualgl-dri.conf /etc/X11/xorg.conf.d/99-virtualgl-dri.conf
+COPY ./vnc-container/docker-headless-vnc-container/src/gpu/99-virtualgl-dri.rules /etc/udev/rules.d/99-virtualgl-dri.rules
+
+RUN echo "max_parallel_downloads=10" >> /etc/dnf.dnf.conf

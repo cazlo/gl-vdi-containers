@@ -1,10 +1,14 @@
 version: "2"
 
 services:
-  vnc-xfce:
+  #### VNC
+
+  vnc-xfce-rocky-amdgpu:
     build:
         context: ../../
         dockerfile: ./vnc-container/docker-headless-vnc-container/Dockerfile.rocky-xfce-vnc
+        args:
+          BASE_IMAGE: "rocky-amd-gpu:latest"
     volumes:
       - /dev/shm:/dev/shm # todo probably not necessary
     ports:
@@ -14,8 +18,8 @@ services:
       DEBUG: "true"
       DISPLAY: ":1"
       VGL_DISPLAY: "/dev/dri/card0"
-      # TURBO_VNC: "true"
-      # TURBO_VNC_VIRTUALGL: "true"
+#      TURBO_VNC: "true"
+#      TURBO_VNC_VIRTUALGL: "true"
       # TIGER_VNC_VIRTUALGL: "true"
       # VNC_RESOLUTION: "3840x2160"
     devices:
@@ -31,11 +35,152 @@ services:
 #      - seccomp=unconfined
 #    user: "root"
     user: "1000:1000"
-#    userns_mode: "host"
+    #    userns_mode: "host"
     group_add:
       - video
       - render
-      - "44" # video
-      - "109" # render
-#      - "226," #mystery
-#      - "226" # mystery
+  vnc-xfce-rocky-nvidiagpu:
+    build:
+      context: ../../
+      dockerfile: ./vnc-container/docker-headless-vnc-container/Dockerfile.rocky-xfce-vnc
+      args:
+        BASE_IMAGE: "rocky-nvidia-gpu:latest"
+    volumes:
+      - /dev/shm:/dev/shm # todo probably not necessary
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    ports:
+      - "5901:5901"
+      - "6901:6901"
+    environment:
+      DEBUG: "true"
+      DISPLAY: ":1"
+      VGL_DISPLAY: "/dev/dri/card0"
+      #      TURBO_VNC: "true"
+      #      TURBO_VNC_VIRTUALGL: "true"
+      # TIGER_VNC_VIRTUALGL: "true"
+      # VNC_RESOLUTION: "3840x2160"
+#    devices:
+#      - "/dev/dri/:/dev/dri/"
+#      - "/dev/vga_arbiter:/dev/vga_arbiter"
+#      - "/dev/dri/renderD128:/dev/dri/renderD128"
+#      - "/dev/dri/card0:/dev/dri/card0"
+    tty: true
+    command:
+      - /bin/bash
+#    security_opt:
+#      - seccomp=unconfined
+#    user: "root"
+    user: "1000:1000"
+#    userns_mode: "host"
+#    group_add:
+#      - video
+#      - render
+  vnc-xfce-rocky-intelgpu:
+    build:
+        context: ../../
+        dockerfile: ./vnc-container/docker-headless-vnc-container/Dockerfile.rocky-xfce-vnc
+        args:
+          BASE_IMAGE: "rocky-intel-gpu:latest"
+    volumes:
+      - /dev/shm:/dev/shm # todo probably not necessary
+    ports:
+      - "5901:5901"
+      - "6901:6901"
+    environment:
+      DEBUG: "true"
+      DISPLAY: ":1"
+      VGL_DISPLAY: "/dev/dri/card0"
+#      TURBO_VNC: "true"
+#      TURBO_VNC_VIRTUALGL: "true"
+      # TIGER_VNC_VIRTUALGL: "true"
+      # VNC_RESOLUTION: "3840x2160"
+    devices:
+      - "/dev/dri/:/dev/dri/"
+#      - "/dev/vga_arbiter:/dev/vga_arbiter"
+      - "/dev/dri/renderD128:/dev/dri/renderD128"
+#      - "/dev/dri/card0:/dev/dri/card0"
+    tty: true
+    command:
+      - /bin/bash
+#    security_opt:
+#      - seccomp=unconfined
+#    user: "root"
+    user: "1000:1000"
+    #    userns_mode: "host"
+    group_add:
+      - video
+      - render
+
+  #### XPRA
+  xpra-xfce-rocky-amdgpu:
+    build:
+        context: ../../
+        dockerfile: ./vnc-container/docker-headless-vnc-container/Dockerfile.rocky-xfce-xpra
+        args:
+          BASE_IMAGE: "rocky-amd-gpu:latest"
+    volumes:
+      - /dev/shm:/dev/shm  # todo probably not necessary
+    ports:
+      - "5901:5901"
+      - "6901:6901"
+    environment:
+      DEBUG: "true"
+      DISPLAY: ":1"
+      VGL_DISPLAY: "/dev/dri/card0"
+      VNC_RESOLUTION: "3840x2160"
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri/:/dev/dri/"
+      - "/dev/vga_arbiter:/dev/vga_arbiter"
+      - "/dev/dri/renderD128:/dev/dri/renderD128"
+      - "/dev/dri/card0:/dev/dri/card0"
+    tty: true
+    command:
+      - /bin/bash
+#    user: "root"
+    user: "1000:1000"
+    group_add:
+      - video
+      - render
+  xpra-xfce-rocky-nvidiagpu:
+    build:
+        context: ../../
+        dockerfile: ./vnc-container/docker-headless-vnc-container/Dockerfile.rocky-xfce-xpra
+        args:
+          BASE_IMAGE: "rocky-nvidia-gpu:latest"
+    volumes:
+      - /dev/shm:/dev/shm  # todo probably not necessary
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    ports:
+      - "5901:5901"
+      - "6901:6901"
+    environment:
+      DEBUG: "true"
+      DISPLAY: ":1"
+      VGL_DISPLAY: "/dev/dri/card0"
+      VNC_RESOLUTION: "3840x2160"
+#    devices:
+#      - "/dev/dri/:/dev/dri/"
+#      - "/dev/vga_arbiter:/dev/vga_arbiter"
+#      - "/dev/dri/renderD128:/dev/dri/renderD128"
+#      - "/dev/dri/card0:/dev/dri/card0"
+    tty: true
+    command:
+      - /bin/bash
+#    user: "root"
+    user: "1000:1000"
+#    group_add:
+#      - video
+#      - render
