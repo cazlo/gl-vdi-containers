@@ -14,6 +14,8 @@ This experiment delves into the synergistic potential of combining powerful grap
 
 The primary objective of this experiment is to establish a scalable, reliable, and high-performance VDI environment that can adapt to the rigorous demands of diverse computational and graphical tasks. Specifically, it seeks to:
 
+- **TODO** objective list here 
+
 ### Technology Overview
 
 At the core of this experiment lies a sophisticated technology stack designed to leverage the best of both hardware acceleration and software graphical acceleration libaries (e.g. OpenGL).
@@ -76,6 +78,12 @@ This technology stack brings a multitude of benefits to the table, including but
 
 ### Test Machines Setup
 
+For this experiment, I am most interested in scalability and extensibility of the solutions, to see which solutions are most extensible across a variety of hardware.
+As such, I have chosen to focus on a variety of available consumer workstation hardware which I have available for testing.
+Additionally, I am interested in exploring common Enterprise grade hardware solutions such as EC2s hosted in AWS.
+
+**TODO** tech specs of hardware used here
+
 ### NICE DCV
 
 ### x11docker
@@ -102,9 +110,42 @@ This technology stack brings a multitude of benefits to the table, including but
  
 #### Random links to organize and reference later:
 
-random context:
+phoronix-test-suite
+open source collection of tests we can use to benchmark the various solutions' performance
+
+- blender
+  - [blender 4.0.0](https://openbenchmarking.org/test/pts/blender-4.0.0)
+- CAD benchmarks
+  - [OpenSCAD](https://hipcub.readthedocs.io/en/rocm-5.7.1/deploy/docker.html)
+    - note: phoronix test suite not installing this dep for some reason. package available in debian, fedora, but not EL/Rocky (see https://pkgs.org/download/openscad)
+    - AppImage available at https://files.openscad.org/OpenSCAD-2021.01-x86_64.AppImage
+  - [BRL-CAD](https://openbenchmarking.org/test/pts/brl-cad)
+    - might need to recompile this with opengl/qt/x11 support. see also https://sourceforge.net/p/brlcad/discussion/362510/thread/49279c58/
+- ML/AI
+  - [Tensorflow](https://openbenchmarking.org/test/pts/tensorflow) 
+  - [No stable diffusion benchmark built in yet](https://www.phoronix.com/forums/forum/phoronix/phoronix-test-suite/1383565-stable-diffusion-benchmark)
+
+potentially relevant amdgpu bugs
+- [discussion of 'amdgpu: os_same_file_description couldn't determine if two DRM fds reference the same file description.'](https://forum.snapcraft.io/t/im-unsure-if-a-parallel-install-caused-my-desktop-amd-gpu-driver-to-crash/34325/13)
+- [amdgpu driver randomly resets](https://bugs.launchpad.net/ubuntu/+source/mesa/+bug/2016435)
+
+random context/dead-ends found on the web:
 - [gnome remote desktop shortcoming: requiring active user session](https://www.reddit.com/r/gnome/comments/17jfxfu/remote_desktop_vnc_etc_into_gnome_desktop/)
   - related issue in upstream: https://gitlab.gnome.org/GNOME/gnome-remote-desktop/-/issues/92 
+- [tigervnc opengl feature request ticket open](https://github.com/TigerVNC/tigervnc/issues/1626)
+- [someone else looking for similar in 2019](https://community.mrtrix.org/t/opengl-software-rendering-and-vnc/2728)
+- [Nvidia forum discussion on forwarding X from jetson build box to client OS like mac](https://forums.developer.nvidia.com/t/how-do-i-use-a-video-sink-through-vnc-x-tunnel-and-fix-no-egl-display/166620/4)
+- [talk about GPU isolation and k8s scheduling](https://github.com/ROCm/ROCm/issues/994)
+  - seems to be mentioning use of https://github.com/RadeonOpenCompute/k8s-device-plugin
+  - 'resolved' with docs at https://rocm.docs.amd.com/en/docs-5.7.1/understand/gpu_isolation.html
+
+ROCm
+- [Docker deploy](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/docker.html)
+- [GPU+Kernel support list](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html)
+- [ROCm package list](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/native-install/package-manager-integration.html)
+- [Official Pytorch and TensorFlow docker images](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/docker-image-support-matrix.html)
+- [unvetted example of rocm + stable diffusion in docker](https://github.com/l1na-forever/stable-diffusion-rocm-docker?tab=readme-ov-file)
+- [gfx1103/780M support discussion](https://github.com/ROCm/ROCm/discussions/2631)
 
 TurboVNC
 - [turbovnc install instructions](https://turbovnc.org/Downloads/YUM)

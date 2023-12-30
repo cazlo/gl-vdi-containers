@@ -50,3 +50,4 @@ run-x11docker-gnome:
 # ./blender -noaudio --enable-autoexec -b ../bmw27_gpu.blend -o output.test -x 1 -F JPEG -f 1 -- --cycles-device HIP+CPU
 # runs OK in VNC and x11docker on 22.04 + 7900xt
 # in VNC can run this command at same time as virtualgl accelerated blender GUI, but saw at least 1 driver crash because of this
+# only runs ok on mobile chip (780M) with blender 4.1 alpha or patch at https://projects.blender.org/blender/blender/pulls/113696 (see also https://wiki.blender.org/wiki/Reference/Release_Notes/4.1/Cycles)
