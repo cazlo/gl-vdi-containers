@@ -60,7 +60,7 @@ services:
     environment:
       DEBUG: "true"
       DISPLAY: ":1"
-      VGL_DISPLAY: "/dev/dri/card0"
+      VGL_DISPLAY: "egl"
       #      TURBO_VNC: "true"
       #      TURBO_VNC_VIRTUALGL: "true"
       # TIGER_VNC_VIRTUALGL: "true"
@@ -169,8 +169,7 @@ services:
     environment:
       DEBUG: "true"
       DISPLAY: ":1"
-      VGL_DISPLAY: "/dev/dri/card0"
-      VNC_RESOLUTION: "3840x2160"
+      VGL_DISPLAY: "egl"
 #    devices:
 #      - "/dev/dri/:/dev/dri/"
 #      - "/dev/vga_arbiter:/dev/vga_arbiter"

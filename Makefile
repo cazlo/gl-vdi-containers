@@ -36,6 +36,11 @@ build-run-xpra-xfce-rocky-amdgpu:
 	env BUILDKIT_PROGRESS=plain docker compose -f vnc-container/docker-headless-vnc-container/docker-compose.yml \
 		run --service-ports --rm --build xpra-xfce-rocky-amdgpu
 
+
+build-run-xpra-xfce-rocky-nvidiagpu:
+	env BUILDKIT_PROGRESS=plain docker compose -f vnc-container/docker-headless-vnc-container/docker-compose.yml \
+		run --service-ports --rm --build xpra-xfce-rocky-nvidiagpu
+
 build-run-xpra-xfce-rocky-intelgpu:
 	env BUILDKIT_PROGRESS=plain docker compose -f vnc-container/docker-headless-vnc-container/docker-compose.yml \
 		run --service-ports --rm --build xpra-xfce-rocky-intelgpu

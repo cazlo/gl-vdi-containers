@@ -9,7 +9,25 @@ RUN dnf -y install epel-release
 RUN dnf -y install yum-utils
 RUN dnf config-manager --set-enabled crb
 
-# todo nvidia studd
+# Nvidia drivers
+RUN dnf -y install wget
+RUN yum -y install tar sudo less vim lsof firewalld net-tools pciutils \
+                   file wget kmod xz ca-certificates binutils kbd \
+                   python3-pip bind-utils jq bc
+# Install Nvidia Driver
+RUN wget -q https://us.download.nvidia.com/tesla/535.129.03/NVIDIA-Linux-x86_64-535.129.03.run -O /tmp/NVIDIA-installer.run \
+ && bash /tmp/NVIDIA-installer.run --accept-license \
+                              --no-runlevel-check \
+                              --no-questions \
+                              --no-backup \
+                              --ui=none \
+                              --no-kernel-module \
+                              --no-nouveau-check \
+                              --install-libglvnd \
+                              --no-nvidia-modprobe \
+                              --no-kernel-module-source \
+ && rm -f /tmp/NVIDIA-installer.run \
+ && nvidia-xconfig --preserve-busid
 
 # TurboVNC + VirtualGL
 RUN dnf install -y mesa-libGLU libXv libEGL libXtst xorg-x11-xauth glx-utils

@@ -73,6 +73,6 @@ echo "DCV native client for best performance: Enter “External_IP_or_Server_Nam
 echo
 
 ) &
-  sleep 10000; # todo bad
-# echo ">> Exec /usr/sbin/init"
-#exec /usr/sbin/init
+#  sleep 10000; # todo bad
+echo ">> Exec /usr/sbin/init"
+exec /usr/sbin/init
