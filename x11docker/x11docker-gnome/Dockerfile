@@ -29,7 +29,7 @@
 #  - gnome-usage crashes with a segfault.
 #  - Wayland setups do not work.
 
-FROM debian:bookworm
+FROM ubuntu:22.04
 ENV LANG en_US.UTF-8
 ENV SHELL=/bin/bash
 
