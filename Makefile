@@ -41,11 +41,23 @@ build-run-xpra-xfce-rocky-intelgpu:
 ############### x11docker pipeline
 
 build-x11docker-all:
-	cd x11docker && \
-	pushd x11docker-gnome && docker build -t x11docker/gnome . && popd && \
-	pushd x11docker-xfce && docker build -t x11docker/xfce . && popd && \
-	pushd x11docker-xfce-rocky && docker build -t x11docker/xfce-rocky . && popd && \
+	$(MAKE) -j 4 \
+		build-x11docker-xfce-server \
+		build-x11docker-xfce-rocky \
+		build-x11docker-xfce \
+		build-x11docker-gnome
+build-x11docker-xfce-server:
+	export BUILDKIT_PROGRESS=plain && cd x11docker && \
 	pushd x11docker-xserver && docker build -t x11docker/xserver . && popd
+build-x11docker-xfce-rocky:
+	export BUILDKIT_PROGRESS=plain && cd x11docker && \
+	pushd x11docker-xfce-rocky && docker build -t x11docker/xfce-rocky . && popd
+build-x11docker-xfce:
+	export BUILDKIT_PROGRESS=plain && cd x11docker && \
+	pushd x11docker-xfce && docker build -t x11docker/xfce . && popd
+build-x11docker-gnome:
+	export BUILDKIT_PROGRESS=plain && cd x11docker && \
+	pushd x11docker-gnome && docker build -t x11docker/gnome . && popd
 
 x_server_in_container="--xc" # empty string to not use this
 network="bridge" # bridge, none, or already existing docker network name
