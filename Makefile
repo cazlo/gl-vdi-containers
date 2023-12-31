@@ -59,7 +59,7 @@ build-x11docker-gnome:
 	export BUILDKIT_PROGRESS=plain && cd x11docker && \
 	pushd x11docker-gnome && docker build -t x11docker/gnome . && popd
 
-x_server_in_container="--xc" # empty string to not use this
+x_server_in_container=--xc # empty string to not use this
 network="bridge" # bridge, none, or already existing docker network name
 SHELL=/bin/bash
 run-x11docker-xfce-rocky:
