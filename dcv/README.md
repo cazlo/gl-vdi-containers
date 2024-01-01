@@ -91,3 +91,77 @@ sudo dcv create-session \
     default
 ```
 
+## dcv stuff
+
+### IMDSv2 hop count increase
+
+by default this is 1 now, which means it is unreachable by containers running in non `network=host` configs.
+DCV needs to ping IMDSv2 to startup.
+Quick fix for this is a command like
+```shell
+aws ec2 modify-instance-metadata-options \
+    --instance-id $INSTANCE_ID \
+    --http-put-response-hop-limit 2
+```
+Might need to allow 3 hops for some advanced net configs like k8s
+
+This removes need to use host network
+
+### dcvserver bin options
+
+```
+[root@5e31422a736a /]# dcvserver --help-all
+ Usage:
+  dcvserver [OPTION…]
+
+Help Options:
+  -h, --help                                                                     Show help options
+  --help-all                                                                     Show all help options
+  --help-connectivity                                                            Show connectivity options
+  --help-security                                                                Show security options
+  --help-resource                                                                Show resource options
+  --help-gtk                                                                     Show GTK+ Options
+  --help-Service                                                                 Show the Service Options
+
+Connectivity options:
+  -p, --web-port=port                                                            Default HTTPS port to listen
+  --web-url-path=path                                                            URL path handled by the HTTP server
+  --web-root=root                                                                Document root for the HTTP server
+  --enable-quic-frontend                                                         Enable QUIC frontend
+  --quic-port=port                                                               Default UDP port to listen
+  --dqt-alpn-versions=Dqt10|Dqt02Draft|Dqt01Draft|Dcv20Basic                     Specify the DQT application protocols meant to be used during connection establishment. The argument is a comma separated list of protocols. E.g., 'Value1[,Value2]*'.
+
+Security options:
+  -a, --auth=mode                                                                Authentication mode
+  --encryption=mode                                                              Encryption mode
+  --passwd-file=filename                                                         Password file (dcv authentication mode only)
+  --ca-file=filename                                                             CA file (PEM format)
+  --no-tls-strict                                                                Disable strict certificate validation
+  --auth-token-verifier=URL                                                      Endpoint for the auth token verifier
+  --permissions-file=filename                                                    Permissions file for the session createdat startup time
+  --owner=owner                                                                  Owner of the session created at startup time
+
+Resource options:
+  --storage-root=storage                                                         Path folder of the file storage root
+
+GTK+ Options
+  --class=CLASS                                                                  Program class as used by the window manager
+  --name=NAME                                                                    Program name as used by the window manager
+  --gtk-module=MODULES                                                           Load additional GTK+ modules
+  --g-fatal-warnings                                                             Make all warnings fatal
+
+Service Options
+  --service                                                                      Whether to start DCV as a service
+
+Application Options:
+  -v, --version                                                                  Print version and exit
+  --log-level=error|warning|info|debug                                           Control verbosity of the logs
+  --log-dir                                                                      Directory path for saving logs
+  --metrics=logfile|console|carbon|jsonlogfile|none                              Where metrics should be reported
+  --create-session                                                               Create a session at startup time
+  --session-type=console                                                         Specify the session type of the session created at startup time
+  --max-concurrent-clients                                                       Create a session enforcing the maximum number of concurrent clients
+  --client-eviction-policy=reject-new-connection|same-user-oldest-connection     Client eviction policy if maximum numberof concurrent clients is reached
+  --license-file                                                                 Set path to license file
+  --display=DISPLAY                   
+```
