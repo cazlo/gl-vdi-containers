@@ -5,6 +5,12 @@ build-dcv:
 run-dcv:
 	env BUILDKIT_PROGRESS=plain docker run --rm -p8443:8443 --privileged -e container=docker rocky-batch-dcv
 
+build-dcv-xfce:
+	cd dcv/aws-batch-using-nice-dcv && \
+ 	env BUILDKIT_PROGRESS=plain docker build -t rocky-batch-dcv-xfce -f aws-batch-using-nice-dcv-xfce.dockerfile .
+run-dcv-xfce:
+	env BUILDKIT_PROGRESS=plain docker run --rm -p8443:8443 --privileged -e container=docker rocky-batch-dcv-xfce
+
 ############## VNC container pipeline
 
 ####################### base image
