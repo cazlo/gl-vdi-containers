@@ -50,7 +50,9 @@ RUN wget -q http://us.download.nvidia.com/tesla/535.129.03/NVIDIA-Linux-x86_64-5
                               --no-nvidia-modprobe \
                               --no-kernel-module-source \
  && rm -f /tmp/NVIDIA-installer.run \
- && nvidia-xconfig --preserve-busid
+ && nvidia-xconfig --preserve-busid --enable-all-gpus --connected-monitor=DFP-0,DFP-1,DFP-2,DFP-3
+## connected-monitor may vary by target hardware capabilities. requires NVIDIA GRID capable device (e.g. g4dn) in AWS. see also https://docs.aws.amazon.com/dcv/latest/adminguide/setting-up-installing-linux-prereq.html#linux-prereq-gpu
+
 
 # configure Xorg, install NICE DCV server
 RUN rpm --import https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY \
