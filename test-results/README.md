@@ -1,6 +1,55 @@
 # random notes
 
 
+## Dependency Installation Details
+
+### Package management
+| VDI solution | Unified Server, Client installers | Separate Server, Client installers                                  | Has RPM                                                                              | Has DEB                                                                               | Has DMG                                          | Has EXE                                | Has MSI                   |
+|--------------|-----------------------------------|---------------------------------------------------------------------|--------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|--------------------------------------------------|----------------------------------------|---------------------------|
+| NICE DCV     | no                                | yes                                                                 | yes, only via tar                                                                    | yes, only via tar                                                                     | yes, only via tar. client only avail in homebrew | yes, chocolatey or direct bin download | no                        |
+| realvnc      | yes (RealVNC Connect)             | yes                                                                 | yes, direct bin download                                                             | yes, direct bin download                                                              | yes, direct bin download                         | yes, chocolatey or direct bin download | yes, direct bin download  |
+| tigervnc     | no                                | yes                                                                 | yes, native package mgmt in many distros (Centos, AL2, Rocky) or direct bin download | yes, native package mgmt in many distros (e.g. Debian, Ubuntu) or direct bin download | yes, homebrew or direct bin download             | yes, chocolatey or direct bin download | no                        |
+| turbovnc     | yes                               | no                                                                  | yes, packagecloud.io repo or direct bin download                                     | yes, packagecloud.io repo or direct bin download                                      | yes, homebrew or direct bin download             | yes, direct bin download               | no                        |
+| xpra         | yes (xpra package)                | yes, but only if using https://xpra.org/dist or direct bin download | yes, some native package mgmt, or xpra.org/dist, or direct bin download              | yes, some native package mgmt, or xpra.org/dist, or direct bin download               | yes, homebrew or direct bin download             | yes, direct bin download               | yes, direct bin download  |
+
+### Package size
+
+#### Client
+| VDI solution | RPM             | DEB              | DMG          | EXE             |
+|--------------|-----------------|------------------|--------------|-----------------|
+| NICE DCV     | ~18.8M - ~ ~21M | ~17.5M -> ~19.6M | ~44M - ~47M  | ~65.7M - ~68.6M |
+| RealVNC      | ?               | ?                | ?            | ?               |
+| TigerVNC     | ~0.3M           | ~0.3M            | ~6M          | ~6.7M           |
+| TurboVNC     | ~39.7M - ~40.3M | ~38.4M - ~39.1M  | ~38 - ~39.6M | ~38.3 - ~37.9   |
+| Xpra         | ~4.8M           | ~3.4M            | ~61M - ~68M  | ~138M           |
+
+#### Server
+| VDI solution | RPM                          | DEB                          | DMG                      | EXE                      |
+|--------------|------------------------------|------------------------------|--------------------------|--------------------------|
+| NICE DCV     | ~15.2M - ~17.7M              | ~14.2M - 15.5M               | N/A                      | ~58.7M                   |
+| RealVNC      | ?                            | ?                            | ?                        | ?                        |
+| TigerVNC     | ~1.3M                        | ~1.6M                        | N/A                      | N/A                      |
+| TurboVNC     | packaged with client         | packaged with client         | N/A                      | N/A                      |
+| Xpra         | usually packaged with client | usually packaged with client | ? packaged with client ? | ? packaged with client ? |
+
+#### Analysis Caveats
+
+- The information above is for the most recently released bins at time of writing only (2023-12-29).
+- RealVNC is not analyzed yet because they don't seem to list download size in an easy to grab way.
+- The size does not include globally required dependencies of packages, or uncompressed artifact size, so this isn't the whole picture yet.
+- Mostly relying on stats posted on "official download page" (e.g. https://www.nice-dcv.com/, or https://github.com/TurboVNC/turbovnc/releases/tag/3.1 ) or pkg.org (e.g. https://rhel.pkgs.org/9/epel-x86_64/xpra-5.0.2-2.el9.x86_64.rpm.html).
+    - To make this comparison better in the future:
+      - install package including deps in 1 docker layer and measure layer build/deploy stats
+      - to get full picture of impact of using the dependency, measure:
+  - time of download, extract, publish stages of the image build
+  - layer size
+  - number and/or list of transitive dependencies
+- Artifact size ranges indicate the various size between architectures (e.g. amd64 vs aarch64) and supported OS (e.g. ubuntu 22.04 vs 20.04).
+- If provided separately, this does not include analysis of src or doc artifacts (e.g. man pages), only binaries necessary for runtime of the client or server 
+
+
+
+
 info saved for later
 
 ## laptop (780M) issues\
