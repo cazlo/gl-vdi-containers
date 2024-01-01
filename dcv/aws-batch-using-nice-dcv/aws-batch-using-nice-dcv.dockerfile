@@ -8,7 +8,7 @@ ENV container docker
 RUN dnf install -y yum-utils && dnf config-manager --set-enabled crb && dnf clean all
 
 # Install tools
-RUN yum -y install tar sudo less vim lsof firewalld net-tools pciutils \
+RUN dnf -y install tar sudo less vim lsof firewalld net-tools pciutils \
                    file wget kmod xz ca-certificates binutils kbd \
                    python3-pip bind-utils jq bc
 
@@ -21,7 +21,7 @@ RUN pip3 install awscli 2>/dev/null \
  && chmod 600 $HOME/.aws/config
 
 # Install X server and GNOME desktop
-RUN yum -y install glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
+RUN dnf -y install glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
                    xorg-x11-utils xorg-x11-xauth xorg-x11-xinit  \
                    xorg*fonts* xterm  mesa-libxatracker freeglut \
                    gnome-desktop3 gnome-terminal  \
@@ -34,8 +34,7 @@ RUN yum -y install glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
                                                                 #                   gnu-free-mono-fonts gnu-free-sans-fonts \
                                                                 #                   gnu-free-serif-fonts desktop-backgrounds-gnome \
 
-RUN dnf -y install wget
-RUN yum -y install tar sudo less vim lsof firewalld net-tools pciutils \
+RUN dnf -y install tar sudo less vim lsof firewalld net-tools pciutils \
                    file wget kmod xz ca-certificates binutils kbd \
                    python3-pip bind-utils jq bc
 # Install Nvidia Driver,
@@ -58,7 +57,7 @@ RUN rpm --import https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY \
  && mkdir -p /tmp/dcv-inst \
  && cd /tmp/dcv-inst \
  && wget -qO- https://d1uj6qtbmh3dt5.cloudfront.net/2023.1/Servers/nice-dcv-2023.1-16388-el9-x86_64.tgz |tar xfz - --strip-components=1 \
- && yum -y install \
+ && dnf -y install \
     nice-dcv-server-2023.1.16388-1.el9.x86_64.rpm \
     nice-dcv-simple-external-authenticator-2023.1.228-1.el9.x86_64.rpm \
     nice-dcv-web-viewer-2023.1.16388-1.el9.x86_64.rpm \
@@ -91,7 +90,7 @@ CMD ["/usr/local/bin/run_script.sh"]
 
 #FROM dcv
 ## Install Paraview with requirements
-#RUN yum -y install libgomp \
+#RUN dnf -y install libgomp \
 # && wget -q -O ParaView-5.8.0-MPI-Linux-Python3.7-64bit.tar.gz "https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.8&type=binary&os=Linux&downloadFile=ParaView-5.8.0-MPI-Linux-Python3.7-64bit.tar.gz" \
 # && mkdir -p /opt/paraview \
 # && tar zxf  ParaView-5.8.0-MPI-Linux-Python3.7-64bit.tar.gz --directory /opt/paraview/ --strip 1 \
