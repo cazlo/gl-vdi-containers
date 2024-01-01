@@ -1,5 +1,11 @@
+############## DCV container pipeline
+build-dcv:
+	cd dcv/aws-batch-using-nice-dcv && \
+ 	env BUILDKIT_PROGRESS=plain docker build -t rocky-batch-dcv -f aws-batch-using-nice-dcv.dockerfile .
+run-dcv:
+	env BUILDKIT_PROGRESS=plain docker run --rm -p8443:8443 --privileged -e container=docker rocky-batch-dcv
 
-############## vnc container pipeline
+############## VNC container pipeline
 
 ####################### base image
 build-rocky-gpu-container:

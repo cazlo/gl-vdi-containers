@@ -14,11 +14,11 @@ RUN yum -y install tar sudo less vim lsof firewalld net-tools pciutils \
 
 # Install awscli and configure region only
 # Note: required to run aws ssm command
-#RUN pip3 install awscli 2>/dev/null \
-# && mkdir $HOME/.aws \
-# && echo "[default]" > $HOME/.aws/config \
-# && echo "region =  ${AWS_REGION}" >> $HOME/.aws/config \
-# && chmod 600 $HOME/.aws/config
+RUN pip3 install awscli 2>/dev/null \
+ && mkdir $HOME/.aws \
+ && echo "[default]" > $HOME/.aws/config \
+ && echo "region =  ${AWS_REGION}" >> $HOME/.aws/config \
+ && chmod 600 $HOME/.aws/config
 
 # Install X server and GNOME desktop
 RUN yum -y install glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
@@ -34,21 +34,24 @@ RUN yum -y install glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
                                                                 #                   gnu-free-mono-fonts gnu-free-sans-fonts \
                                                                 #                   gnu-free-serif-fonts desktop-backgrounds-gnome \
 
-
+RUN dnf -y install wget
+RUN yum -y install tar sudo less vim lsof firewalld net-tools pciutils \
+                   file wget kmod xz ca-certificates binutils kbd \
+                   python3-pip bind-utils jq bc
 # Install Nvidia Driver,
-#RUN wget -q http://us.download.nvidia.com/tesla/418.87/NVIDIA-Linux-x86_64-418.87.00.run -O /tmp/NVIDIA-installer.run \
-# && bash /tmp/NVIDIA-installer.run --accept-license \
-#                              --no-runlevel-check \
-#                              --no-questions \
-#                              --no-backup \
-#                              --ui=none \
-#                              --no-kernel-module \
-#                              --no-nouveau-check \
-#                              --install-libglvnd \
-#                              --no-nvidia-modprobe \
-#                              --no-kernel-module-source \
-# && rm -f /tmp/NVIDIA-installer.run \
-# && nvidia-xconfig --preserve-busid
+RUN wget -q http://us.download.nvidia.com/tesla/535.129.03/NVIDIA-Linux-x86_64-535.129.03.run -O /tmp/NVIDIA-installer.run \
+ && bash /tmp/NVIDIA-installer.run --accept-license \
+                              --no-runlevel-check \
+                              --no-questions \
+                              --no-backup \
+                              --ui=none \
+                              --no-kernel-module \
+                              --no-nouveau-check \
+                              --install-libglvnd \
+                              --no-nvidia-modprobe \
+                              --no-kernel-module-source \
+ && rm -f /tmp/NVIDIA-installer.run \
+ && nvidia-xconfig --preserve-busid
 
 # configure Xorg, install NICE DCV server
 RUN rpm --import https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY \
@@ -60,9 +63,9 @@ RUN rpm --import https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY \
     nice-dcv-simple-external-authenticator-2023.1.228-1.el9.x86_64.rpm \
     nice-dcv-web-viewer-2023.1.16388-1.el9.x86_64.rpm \
     nice-xdcv-2023.1.565-1.el9.x86_64.rpm \
+    nice-dcv-gl-2023.1.1047-1.el9.x86_64.rpm \
+    nice-dcv-gltest-2023.1.325-1.el9.x86_64.rpm \
  && rm -rf /tmp/dcv-inst
-    # nice-dcv-gl-2023.1.1047-1.el9.x86_64.rpm \
-    # nice-dcv-gltest-2023.1.325-1.el9.x86_64.rpm \
 
 # Define the dcvserver.service
 COPY dcvserver.service /usr/lib/systemd/system/dcvserver.service

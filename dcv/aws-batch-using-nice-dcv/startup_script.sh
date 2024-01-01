@@ -2,6 +2,10 @@
 
 exec &>> /var/log/startup_script.log
 
+systemctl enable --now dcvserver
+
+sleep 5
+
 firewall-cmd --zone=public --permanent --add-port=8443/tcp
 firewall-cmd --zone=public --permanent --add-port=8443/udp  # in addition for UDP/QUIC
 
@@ -23,8 +27,8 @@ else
     _username="user"
     _passwd="dcv"
 fi
-adduser "${_username}" -G wheel
+adduser "${_username}" -G wheel # todo no wheel
 echo "${_username}:${_passwd}" |chpasswd
 echo "created users"
-/usr/bin/dcv create-session --storage-root=%home% --owner "${_username}" --user "${_username}" "${_username}session"
+/usr/bin/dcv create-session --type=console --storage-root=%home% --owner "${_username}" --user "${_username}" "${_username}session"
 echo "created dcv session"

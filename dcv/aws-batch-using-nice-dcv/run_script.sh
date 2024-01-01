@@ -42,8 +42,8 @@ else
 fi
 
 # Enable the DCV service
-/usr/bin/dcvserver --log-dir /var/log/dcv &
-echo "dcv startup result = ${res1}"
+#/usr/bin/dcvserver --log-dir /var/log/dcv &
+#echo "dcv startup result = ${res1}"
 echo
 echo "##########################################"
 echo "NICE DCV Container starting up ... "
@@ -55,7 +55,7 @@ echo
 tailDcvLog &
 
 # Setup user and DCV session
-( sleep 10; /usr/local/bin/startup_script.sh ;
+( sleep 15; /usr/local/bin/startup_script.sh ;
 echo
 echo "##########################################"
 echo "Your NICE DCV Session is ready to login to ... "
