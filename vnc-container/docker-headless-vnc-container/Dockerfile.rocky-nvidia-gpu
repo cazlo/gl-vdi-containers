@@ -5,6 +5,8 @@ MAINTAINER Drew Paettie "cazlo@users.noreply.github.com"
 ENV REFRESHED_AT 2023-12-30
 
 # Common tools
+RUN echo "max_parallel_downloads=10" >> /etc/dnf.dnf.conf
+
 RUN dnf -y install epel-release
 RUN dnf -y install yum-utils
 RUN dnf config-manager --set-enabled crb

@@ -4,6 +4,7 @@ MAINTAINER Drew Paettie "cazlo@users.noreply.github.com"
 ENV REFRESHED_AT 2023-12-30
 
 # Common tools
+RUN echo "max_parallel_downloads=10" >> /etc/dnf.dnf.conf
 RUN dnf -y install epel-release
 RUN dnf -y install yum-utils
 RUN dnf config-manager --set-enabled crb
@@ -27,4 +28,3 @@ RUN printf "1\nn\nn\nn\nx\n" | /opt/VirtualGL/bin/vglserver_config
 COPY ./vnc-container/docker-headless-vnc-container/src/gpu/xorg/99-virtualgl-dri.conf /etc/X11/xorg.conf.d/99-virtualgl-dri.conf
 COPY ./vnc-container/docker-headless-vnc-container/src/gpu/99-virtualgl-dri.rules /etc/udev/rules.d/99-virtualgl-dri.rules
 
-RUN echo "max_parallel_downloads=10" >> /etc/dnf.dnf.conf

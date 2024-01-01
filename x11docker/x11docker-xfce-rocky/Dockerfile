@@ -26,6 +26,8 @@
 
 FROM rockylinux:9
 
+RUN echo "max_parallel_downloads=10" >> /etc/dnf.dnf.conf
+
 RUN dnf -y install epel-release
 RUN dnf update -y
 RUN env DEBIAN_FRONTEND=noninteractive dnf install -y  \

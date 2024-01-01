@@ -4,6 +4,7 @@ FROM rockylinux:9 as dcv
 # Prepare the container to run systemd inside
 ENV container docker
 
+RUN echo "max_parallel_downloads=10" >> /etc/dnf.dnf.conf
 
 RUN dnf install -y yum-utils && dnf config-manager --set-enabled crb && dnf clean all
 
