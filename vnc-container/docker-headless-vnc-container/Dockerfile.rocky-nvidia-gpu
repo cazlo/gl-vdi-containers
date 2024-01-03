@@ -1,0 +1,44 @@
+
+FROM nvidia/cuda:12.3.1-runtime-rockylinux9
+
+MAINTAINER Drew Paettie "cazlo@users.noreply.github.com"
+ENV REFRESHED_AT 2023-12-30
+
+# Common tools
+RUN echo "max_parallel_downloads=10" >> /etc/dnf.dnf.conf
+
+RUN dnf -y install epel-release
+RUN dnf -y install yum-utils
+RUN dnf config-manager --set-enabled crb
+
+# Nvidia drivers
+RUN dnf -y install wget
+RUN yum -y install tar sudo less vim lsof firewalld net-tools pciutils \
+                   file wget kmod xz ca-certificates binutils kbd \
+                   python3-pip bind-utils jq bc
+# Install Nvidia Driver
+RUN wget -q https://us.download.nvidia.com/tesla/535.129.03/NVIDIA-Linux-x86_64-535.129.03.run -O /tmp/NVIDIA-installer.run \
+ && bash /tmp/NVIDIA-installer.run --accept-license \
+                              --no-runlevel-check \
+                              --no-questions \
+                              --no-backup \
+                              --ui=none \
+                              --no-kernel-module \
+                              --no-nouveau-check \
+                              --install-libglvnd \
+                              --no-nvidia-modprobe \
+                              --no-kernel-module-source \
+ && rm -f /tmp/NVIDIA-installer.run \
+ && nvidia-xconfig --preserve-busid --enable-all-gpus --connected-monitor=DFP-0,DFP-1,DFP-2,DFP-3
+## connected-monitor may vary by target hardware capabilities. requires NVIDIA GRID capable device (e.g. g4dn) in AWS. see also https://docs.aws.amazon.com/dcv/latest/adminguide/setting-up-installing-linux-prereq.html#linux-prereq-gpu
+
+# TurboVNC + VirtualGL
+RUN dnf install -y mesa-libGLU libXv libEGL libXtst xorg-x11-xauth glx-utils
+# todo build from source
+COPY ./vnc-container/docker-headless-vnc-container/src/gpu/VirtualGL-3.1.x86_64.rpm /tmp/VirtualGL-3.1.x86_64.rpm
+RUN rpm -i /tmp/VirtualGL-3.1.x86_64.rpm
+
+RUN printf "1\nn\nn\nn\nx\n" | /opt/VirtualGL/bin/vglserver_config
+
+COPY ./vnc-container/docker-headless-vnc-container/src/gpu/xorg/99-virtualgl-dri.conf /etc/X11/xorg.conf.d/99-virtualgl-dri.conf
+COPY ./vnc-container/docker-headless-vnc-container/src/gpu/99-virtualgl-dri.rules /etc/udev/rules.d/99-virtualgl-dri.rules

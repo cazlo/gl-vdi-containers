@@ -9,6 +9,10 @@ xset -dpms &
 xset s noblank &
 xset s off &
 
-/usr/bin/startxfce4 --replace > $HOME/wm.log &
+if [[ ${TIGER_VNC_VIRTUALGL:-} == "true" ]]; then
+  vglrun -wm /usr/bin/startxfce4 --replace > $HOME/wm.log &
+else
+  /usr/bin/startxfce4 --replace > $HOME/wm.log &
+fi
 sleep 1
 cat $HOME/wm.log

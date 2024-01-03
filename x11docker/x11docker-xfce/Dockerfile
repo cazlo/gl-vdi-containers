@@ -24,7 +24,7 @@
 #
 # Look at x11docker --help for further options.
 
-FROM debian:bullseye
+FROM debian:bookworm
 
 RUN apt-get update && apt-mark hold iptables && \
     env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -90,5 +90,7 @@ you might want to add option --composite.' >&2\n\
 startxfce4\n\
 " > /usr/local/bin/start && \
 chmod +x /usr/local/bin/start
+
+RUN apt-get install -y libgl1-mesa-dri libegl-mesa0 xpra
 
 CMD start

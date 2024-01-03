@@ -1,5 +1,8 @@
 ## Changelog of the Docker headless VNC images
 
+### Version x.x.x:
+* add GL accel for AMD GPUs 
+
 ### Version 2.0.2:
 * fix not exposing VNC port ([#165](https://github.com/ConSol/docker-headless-vnc-container/issues/165)))
 

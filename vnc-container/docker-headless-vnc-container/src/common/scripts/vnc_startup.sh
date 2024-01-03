@@ -91,22 +91,39 @@ PID_SUB=$!
 
 #echo -e "\n------------------ start VNC server ------------------------"
 #echo "remove old vnc locks to be a reattachable container"
-vncserver -kill $DISPLAY &> $STARTUPDIR/vnc_startup.log \
+VNCSERVER_CMD=""
+if [[ ${TURBO_VNC:-} == "true" ]]; then
+  VNCSERVER_CMD="/opt/TurboVNC/bin/vncserver"
+else
+  VNCSERVER_CMD="vncserver"
+fi
+
+$VNCSERVER_CMD -kill $DISPLAY &> $STARTUPDIR/vnc_startup.log \
     || rm -rfv /tmp/.X*-lock /tmp/.X11-unix &> $STARTUPDIR/vnc_startup.log \
     || echo "no locks present"
 
 echo -e "start vncserver with param: VNC_COL_DEPTH=$VNC_COL_DEPTH, VNC_RESOLUTION=$VNC_RESOLUTION\n..."
 
-vnc_cmd="vncserver $DISPLAY -depth $VNC_COL_DEPTH -geometry $VNC_RESOLUTION PasswordFile=$HOME/.vnc/passwd"
+vnc_cmd=""
+if [[ ${TURBO_VNC:-} == "true" ]]; then
+  vnc_cmd="$VNCSERVER_CMD -depth $VNC_COL_DEPTH -geometry $VNC_RESOLUTION $DISPLAY -novnc $NO_VNC_HOME -wm xfce" # todo handle other WM
+else
+  vnc_cmd="$VNCSERVER_CMD $DISPLAY -depth $VNC_COL_DEPTH -geometry $VNC_RESOLUTION PasswordFile=$HOME/.vnc/passwd"
+fi
 if [[ ${VNC_PASSWORDLESS:-} == "true" ]]; then
   vnc_cmd="${vnc_cmd} -SecurityTypes None"
+fi
+if [[ ${TURBO_VNC_VIRTUALGL:-} == "true" ]]; then
+  vnc_cmd="${vnc_cmd} -vgl"
 fi
 
 if [[ $DEBUG == true ]]; then echo "$vnc_cmd"; fi
 $vnc_cmd > $STARTUPDIR/no_vnc_startup.log 2>&1
 
-echo -e "start window manager\n..."
-$HOME/wm_startup.sh &> $STARTUPDIR/wm_startup.log
+if [[ ${TURBO_VNC:-} != "true" ]]; then
+  echo -e "start window manager\n..."
+  $HOME/wm_startup.sh &> $STARTUPDIR/wm_startup.log
+fi
 
 ## log connect options
 echo -e "\n\n------------------ VNC environment started ------------------"

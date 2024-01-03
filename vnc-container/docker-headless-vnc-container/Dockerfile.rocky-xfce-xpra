@@ -42,8 +42,8 @@ RUN $INST_SCRIPTS/tools.sh
 #ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
 ### Install xvnc-server & noVNC - HTML5 based VNC viewer
-RUN $INST_SCRIPTS/tigervnc.sh
-RUN $INST_SCRIPTS/no_vnc.sh
+#RUN $INST_SCRIPTS/tigervnc.sh
+#RUN $INST_SCRIPTS/no_vnc.sh
 
 ### Install firefox and chrome browser
 RUN $INST_SCRIPTS/firefox.sh
@@ -61,22 +61,14 @@ RUN $INST_SCRIPTS/rocky.sh
 
 RUN adduser --home $HOME -u  1000 headless
 
-COPY ./vnc-container/docker-headless-vnc-container/src/gpu/turbovnc.repo /etc/yum.repos.d/turbovnc.repo
-RUN dnf install -y turbovnc
+# work around older version of xpra (5.0.2) with missing deps in the current rocky repo (e.g. python3-aioquic)
+# todo use local cache of gpg key
+COPY ./vnc-container/docker-headless-vnc-container/src/gpu/xpra.repo /etc/yum.repos.d/xpra.repo
+RUN dnf install -y xpra xpra-codecs # x264-xpra
+#RUN dnf install -y xpra-codecs-extras --skip-broken currently broken on rocky9
 
-#COPY ./phoronix-test-suite/phoronix-test-suite /opt/phoronix-test-suite todo
-#RUN dnf install -y epel-release
-#RUN dnf install -y phoronix-test-suite unzip xz
-#USER headless
-#RUN phoronix-test-suite install-dependencies pts/blender
-#RUN phoronix-test-suite install pts/blender
-# todo pre-cache install of blender test(s)? or maybe stick them on via volume mount instead for faster rebuilds
-# note blender is like 1.5GB with relatively slow downloads from the public internet (most time comes from the .blend files)
-#RUN phoronix-test-suite install-dependencies pts/xonotic
-#USER headless
-#RUN phoronix-test-suite install pts/xonotic
+RUN dnf install -y pulseaudio --allowerasing
+
 USER headless
-
-
-ENTRYPOINT ["/dockerstartup/vnc_startup.sh"]
-CMD ["--wait"]
+ENTRYPOINT xpra start-desktop --bind-tcp=0.0.0.0:6901 --html=on --printing=no --daemon=no --start-child="/usr/bin/startxfce4 --replace" --exit-with-children --opengl=yes --mdns=no
+# --pixel-depth=16 

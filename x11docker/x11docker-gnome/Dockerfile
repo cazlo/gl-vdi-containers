@@ -29,7 +29,7 @@
 #  - gnome-usage crashes with a segfault.
 #  - Wayland setups do not work.
 
-FROM debian:bullseye
+FROM ubuntu:22.04
 ENV LANG en_US.UTF-8
 ENV SHELL=/bin/bash
 
@@ -74,7 +74,7 @@ RUN apt-get update && \
       gnome-control-center \
       gnome-system-monitor \
       gnome-terminal \
-      gnome-tweak-tool \
+      gnome-tweaks \
       nautilus && \
     /cleanup
 
@@ -83,5 +83,11 @@ RUN apt-get update && \
     env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       gnome-shell-extension* && \
     /cleanup
+
+RUN    apt-get update && env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      libxv1 \
+      mesa-utils \
+      mesa-utils-extra \
+       xpra
 
 CMD gnome-shell
